@@ -3514,6 +3514,11 @@
 			<location>C:/ESPRESSIF/esp-idf-v4.4.7/components/wpa_supplicant/src/crypto/aes-gcm.c</location>
 		</link>
 		<link>
+			<name>build/ide/esp_idf_components/wpa_supplicant/src/crypto/aes-omac1.c</name>
+			<type>1</type>
+			<location>C:/ESPRESSIF/esp-idf-v4.4.7/components/wpa_supplicant/src/crypto/aes-omac1.c</location>
+		</link>
+		<link>
 			<name>build/ide/esp_idf_components/wpa_supplicant/src/crypto/aes-siv.c</name>
 			<type>1</type>
 			<location>C:/ESPRESSIF/esp-idf-v4.4.7/components/wpa_supplicant/src/crypto/aes-siv.c</location>
