@@ -49,6 +49,9 @@
 /////////////////////////////////// MAGNIFLEX DEVICE ////////////////////////////////
 #define MAX_NSNS 	10
 
+
+#define OFFSET_TEMP 6
+
 typedef enum parameter_type {
 	BODY_P = 0,
 	TEMP,
