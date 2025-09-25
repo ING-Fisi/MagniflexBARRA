@@ -222,7 +222,7 @@ int acq_snsmems_raw_data (magniflex_reg_t *dev) {
 
 	// Data acquisition variables.
 	uint8_t rtbuff[100];
-	int axis = 3, freqsamp = 208, blen = 10;//5000;
+	int axis = 3, freqsamp = 208, blen = 5000;
 	int err_cnt = 0;
 
 	// Set data acquisition counters register.

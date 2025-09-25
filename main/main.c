@@ -515,7 +515,7 @@ int chck_req_periodic_pub( magniflex_reg_t *dev, char* pub_js, char* data_js ) {
 		if ( (get_mqtt_service_state() == MQTT_SERV_CONNECTED) || (get_mqtt_service_state() == MQTT_SERV_SUBCRIBED) ) {
 			ESP_LOGW(TAG,"periodic publish %d:\n%s",strlen(pub_js), pub_js);
 			ret = esp_mqtt_client_publish(mqttc, giotc_data_topic, pub_js, 0, 1, 0);
-			ret = esp_mqtt_client_publish(mqtt_fisitron,"/fisitron_topic/log", pub_js, 0, 1, 0);
+			//ret = esp_mqtt_client_publish(mqtt_fisitron,"/fisitron_topic/log", pub_js, 0, 1, 0);
 		}
 		else {
 			ESP_LOGW(TAG,"chck_req_periodic_pub skip publish: MQTT client not connected.");
@@ -996,7 +996,7 @@ static void stats_task(void *arg)
 //*********************************************************************************************//
 void ctrl_tsk( void *vargs ) {
 
-	fisitron_mqtt_app_start();
+	//fisitron_mqtt_app_start();
 
 #ifdef GIOTCP_PUB
 
@@ -1183,6 +1183,13 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 //*********************************************************************//
 
 
+
+
+
+//***************************************************************************************************************************//
+//******************************************************** GPIO MNG *********************************************************//
+//***************************************************************************************************************************//
+
 static void IRAM_ATTR gpio_isr_handler(void* arg)
 {
 	uint32_t gpio_num = (uint32_t) arg;
@@ -1201,11 +1208,11 @@ static void gpio_task_example(void* arg)
 
 				ESP_LOGI(TAG,"RESET PARAMETRI --> REBOOT");
 
-				float tmpf[MAX_NSNS] = {0};
-				memset(tmpf,0,sizeof(tmpf));
-				snsmems_nvs_save_thrsh(tmpf, MAX_NSNS);
+				//float tmpf[MAX_NSNS] = {0};
+				//memset(tmpf,0,sizeof(tmpf));
+				//snsmems_nvs_save_thrsh(tmpf, MAX_NSNS);
 				//ESP_LOGI(TAG,"Erase NVS flash partition.");
-				//nvs_flash_erase();
+				nvs_flash_erase();
 				//ESP_LOGI(TAG,"Reboot system.  CAZZZO");
 				esp_restart();
 			} break;
@@ -1277,6 +1284,10 @@ void gpio_init(void)
 	//    }
 }
 
+//***************************************************************************************************************************//
+//***************************************************** OTA REQUEST *********************************************************//
+//***************************************************************************************************************************//
+
 //#define MAX_HTTP_RECV_BUFFER 512
 #define MAX_HTTP_OUTPUT_BUFFER 128
 
@@ -1289,7 +1300,6 @@ static void ota_request(char* output_buffer,int buffer_len)
 	char otaurl[300];
 	sprintf(otaurl, "http://magniflex.iot-update.datasmart.cloud/?v=%s&idapp=%s&iddevice=%s", fw_ver_str, "mag", macstr);
 	ESP_LOGI(TAG, "OTAURL = %s",otaurl);
-
 
 	esp_http_client_config_t config = {
 			//.url = "http://"CONFIG_EXAMPLE_HTTP_ENDPOINT"/get",
@@ -1321,11 +1331,13 @@ static void ota_request(char* output_buffer,int buffer_len)
 	}
 	esp_http_client_close(client);
 	esp_http_client_cleanup(client);
-
-
 }
 
-//********************************************************************************************************//
+//***************************************************************************************************************************//
+//***************************************************************************************************************************//
+//********************************************************** MAIN ***********************************************************//
+//***************************************************************************************************************************//
+//***************************************************************************************************************************//
 
 void app_main(void) {
 
@@ -1359,13 +1371,6 @@ void app_main(void) {
 
 	print_chip_info();
 
-
-
-
-
-
-
-
 	/* Initialize device main features */
 	ESP_LOGD(TAG,"DEV_INIT: initialize hardware features");
 	esp_err_t err = nvs_flash_init(); // NVS
@@ -1374,11 +1379,6 @@ void app_main(void) {
 		err = nvs_flash_init();
 	}
 	ESP_ERROR_CHECK( err );
-
-
-
-
-
 
 
 	// DBG SPIFFS READ CERTS
@@ -1439,7 +1439,6 @@ void app_main(void) {
 		}
 	}
 
-
 	//	//**********************************************************//
 	ESP_LOGI(TAG, "Reading file");
 	FILE* f = fopen("/spiffs/rsa_private.pem", "r");
@@ -1452,26 +1451,15 @@ void app_main(void) {
 		fgets(line, sizeof(line), f);
 		fclose(f);
 	}
-	//	// strip newline
-	//	char* pos = strchr(line, '\n');
-	//	if (pos) {
-	//		*pos = '\0';
-	//	}
-	//	ESP_LOGI(TAG, "Read from file: '%s'", line);
 
-	// All done, unmount partition and disable SPIFFS
-	//esp_vfs_spiffs_unregister(conf.partition_label);
-	//ESP_LOGI(TAG, "SPIFFS unmounted");
-
-	//*****************************************************************//
-
-
-
-
-
-	//************************* GPIO INIT ********************************//
+	//***************************************************************************************************************************//
+	//******************************************************* GPIO INIT *********************************************************//
+	//***************************************************************************************************************************//
 	gpio_init();
-	//************************* SENS INIT ********************************//
+
+	//***************************************************************************************************************************//
+	//******************************************************* SENS INIT *********************************************************//
+	//***************************************************************************************************************************//
 
 	// Initialize HTS221 data acquisition.
 	if ( mems_i2c_master_init() != ESP_OK ) {
@@ -1481,13 +1469,14 @@ void app_main(void) {
 		ESP_LOGE(TAG, "error: init HTS221 temperature");
 	}
 
-	//tcpip_adapter_init();
-
-
-
+	//***************************************************************************************************************************//
+	//************************************************** GET MAC ADDRESS ********************************************************//
+	//***************************************************************************************************************************//
 	get_mac_str(macstr);
-	//************************* WIFI INIT ********************************//
 
+	//***************************************************************************************************************************//
+	//******************************************************** WIFI INIT ********************************************************//
+	//***************************************************************************************************************************//
 	//char custom_ssid[30]={"Fisitron Wireless"};
 	////char custom_password[30] ={"055319282055"};
 
@@ -1499,8 +1488,6 @@ void app_main(void) {
 
 	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-	//esp_bridge_wifi_set(custom_ssid,custom_password);
 
 	esp_event_handler_instance_t instance_any_id;
 	esp_event_handler_instance_t instance_got_ip;
@@ -1517,7 +1504,6 @@ void app_main(void) {
 
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 
-
 	wifi_config_t wifi_cfg;
 	if(esp_wifi_get_config(ESP_IF_WIFI_STA, &wifi_cfg) != ESP_OK) {
 		ESP_LOGE(TAG, "Failed to get Wi-Fi configuration in WIFI_STORAGE_FLASH");
@@ -1527,11 +1513,14 @@ void app_main(void) {
 		ESP_LOGI(TAG, "[%s][%s]",wifi_cfg.sta.ssid,wifi_cfg.sta.password);
 	}
 
-	//*****************************************//
+
+	//***************************************************************************************************************************//
+	//******************************************************* WIFI START ********************************************************//
+	//***************************************************************************************************************************//
+
 	ESP_ERROR_CHECK(esp_wifi_start());
 
-
-	//********************************************************//
+	//***************************************************************************************************************************//
 
 #ifdef TEST_SNSMEMS
 	// SENSMEMS Initialization and enumeration.
@@ -1554,7 +1543,10 @@ void app_main(void) {
 	return;
 #endif
 
-	//************************* MAGNI INIT ********************************//
+
+	//***************************************************************************************************************************//
+	//******************************************************* MAGNI INIT ********************************************************//
+	//***************************************************************************************************************************//
 	init_magniflex_device( &curdev ); // Initialize device.
 
 	// TODO: do better initialization.
@@ -1562,9 +1554,14 @@ void app_main(void) {
 		curdev.prsnc_trsh[i] = 0.00f;
 	}
 
+	//***************************************************************************************************************************//
+	//************************************ ENABLE BLE CHANNEL  LOOP DI CONTROLLO WIFI *******************************************//
+	//***************************************************************************************************************************//
+
+	ESP_LOGI(TAG,"ENABLE BLE CHANNEL");
+
 	enable_ble();
 
-	//xTaskCreatePinnedToCore(ble_tsk, "ble_tsk", 2048, NULL, 4, NULL, 1/*tskNO_AFFINITY*/);
 	while (wifi_connected == false)
 	{
 		char blemsg[500];
@@ -1577,9 +1574,10 @@ void app_main(void) {
 				prs_bt_js(blemsg);
 			}
 		}
+
+		ESP_LOGI(TAG,"WIFI NOT CONNECTED OPEN BLE CHANNEL");
 		vTaskDelay(500/portTICK_PERIOD_MS);
 	}
-
 
 	long wtime = T_US; 	// FIXME: fast fix.
 	while ( bt_snd_rsp_flag != 1 ) {
@@ -1595,8 +1593,9 @@ void app_main(void) {
 
 	ESP_LOGI(TAG, "Free heap: %ub, min: %ub", esp_get_free_heap_size(), esp_get_minimum_free_heap_size());
 
-
-	//************************* OTA ************************************//
+	//***************************************************************************************************************************//
+	//******************************************************** OTA **************************************************************//
+	//***************************************************************************************************************************//
 
 	char output_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0};
 	ota_request(output_buffer,MAX_HTTP_OUTPUT_BUFFER);
@@ -1620,7 +1619,10 @@ void app_main(void) {
 		}
 	}
 
-	//************************* SNTP ************************************//
+
+	//***************************************************************************************************************************//
+	//******************************************************** SNTP *************************************************************//
+	//***************************************************************************************************************************//
 
 	while (1) {
 		if ( sntp_init_time( DEFAULT_SNTP_SERVER, 20) != 0 ) { // UNIFI_SNTP
@@ -1637,11 +1639,8 @@ void app_main(void) {
 		}
 	}
 
-
 	//*************************************************************************//
 	xTaskCreatePinnedToCore(ctrl_tsk, "ctrl_tsk", 1024*5, NULL, 4, NULL, 1/*tskNO_AFFINITY*/);
-
-
 
 	vTaskDelete(NULL);
 }

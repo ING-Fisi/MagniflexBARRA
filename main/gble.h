@@ -14,7 +14,7 @@
 
 /* --------------------- DEFINES ------------------------- *
  * ------------------------------------------------------- */
-#define DEVICE_NAME "MagniSmart"
+#define DEVICE_NAME "SmartDream"
 #define MAX_SINGLE_SIZE	20
 
 /* --------------------- VARIABLES ----------------------- *
