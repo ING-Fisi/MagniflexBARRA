@@ -1,4 +1,6 @@
+## IDF Component Manager Manifest File
 dependencies:
   espressif/led_strip:
-    version: ^3
-  idf: '>=5.1'
+    version: '^2.4'
+    override_path: '../../../'
+  idf: ">=5.1"
