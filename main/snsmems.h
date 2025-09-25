@@ -194,7 +194,6 @@ void snsmems_en_cmd( uint32_t en );
 // TODO: tidy up.
 void snsmems_acq_en(u8 val);
 u8 snsmems_get_acq_en(void);
-void snsmems_acq_tsk(void *vargs);
 long snsmems_get_wdt(void);
 
 void period_buf_init(void);

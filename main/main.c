@@ -61,7 +61,6 @@
 #define PUBSTR_SIZE 1024
 #define DATASTR_SIZE 1024
 
-
 //****************** GPIO **********************//
 
 #define GPIO_OUTPUT_IO_0    2
@@ -88,10 +87,8 @@ extern int bt_snd_rsp_flag; // TODO: fix on the go, into bt.c
 
 int used_heap = 0;
 
-#ifdef GIOTCP_PUB
 esp_mqtt_client_handle_t mqttc;
 esp_mqtt_client_config_t mqttcfg;
-#endif
 
 extern esp_mqtt_client_handle_t mqtt_fisitron;
 
@@ -357,7 +354,6 @@ void print_mgnflx_regs( magniflex_reg_t *dev ) {
 
 	ESP_LOGI(TAG,	" ----------------------------------- \n"
 			" ----------------------------------- \n");
-
 }
 
 // Function that populate data JSON.
@@ -382,36 +378,12 @@ void param_add2_json( param_t *par, char* pname, data_mode_t m, char* s ) {
 		case RANGE: {
 			if ( nsns == 0 ) { // Component value! Add all 3 component to JSON.
 				jsn_set_float_key(s, (par->val.fbuf), 3, 1, 1, 1);
-				//						jsn_set_float_key(s, par->val.fbuf, 3);
-				//						stridx = sprintf(tmpstr, "'%s':[", pname);
-				//						for ( int i = 0 ; i < 3 ; i++ ) {
-				//							stridx += sprintf((tmpstr + stridx), "%.2f,",par->val.fbuf[i]);
-				//						}
-				//						stridx = sprintf((tmpstr + stridx - 1), "],"); // Remove last ',' and add "]}".
 			}
 			else if ( nsns == 1 ) { // Single sensor parameter.
 				jsn_set_float_key(s, (par->val.fbuf), rngs, 1, 1, 1);
-				//						jsn_set_float_key(s, par->val.fbuf, rngs);
-				//						stridx = sprintf(tmpstr, "'%s':[", pname);
-				//						for ( int i = 0 ; i < rngs ; i++ ) {
-				//							stridx += sprintf((tmpstr + stridx), "%.2f,",(float) *(par->val.fbuf + i));
-				//						}
-				//						stridx = sprintf((tmpstr + stridx - 1), "],"); // Remove last ',' and add "]}".
 			}
 			else {
 				jsn_set_float_key(s, par->val.fbuf, nsns, 1, rngs, 1);
-				//						for ( int i = 0; i < nsns; i++ ) {
-				//							jsn_set_float_key(s, (par->val.fbuf+nsns*rngs), rngs);
-				//						}
-				//						stridx = sprintf(tmpstr, "'%s':[", pname);
-				//						for ( int i = 0 ; i < (nsns*rngs) ; i++ ) {
-				//							stridx += sprintf((tmpstr + stridx), "%.2f,",(float) *(par->val.fbuf + i));
-				//							if ( (i % rngs) == 2 ) {
-				//								stridx += sprintf((tmpstr + stridx - 1), "],["); // Remove last ',' and add "],[".
-				//								stridx--;
-				//							}
-				//						}
-				//						stridx = sprintf((tmpstr + stridx - 3), "],"); // Remove last "],[" and add "]}".
 			}
 		} break;
 		default: {
@@ -449,10 +421,6 @@ void param_add2_json( param_t *par, char* pname, data_mode_t m, char* s ) {
 	default: {
 	} break;
 	}
-	//	if ( strlen(s) == 0 )  {
-	//		strcpy(s,"{");
-	//	}
-	//	strcat(s,tmpstr);
 }
 
 // Function that checks if a parameter has to be published and create the publish JSON.
@@ -462,8 +430,6 @@ void param_chck_pub( magniflex_reg_t *dev, char* js_str ) {
 	//if(dev->presence == 1)
 	if(true)
 	{
-		//strcat(js_str,"{'wifi':[{'ssid':'Vodafone-A37838841','security':'WPA WPA2 PSK','rssi':'-45'}");
-		//dev->presence = 0;
 		for ( int i = 0 ; i < NPARAM ; i++ ) {
 
 			//if((dev->data_req[i] == 1)&&(chck_time_int((long*) &(dev->t_hold[i]), dev->pub_int[i]) == 1))
@@ -473,9 +439,7 @@ void param_chck_pub( magniflex_reg_t *dev, char* js_str ) {
 			}
 		}
 
-
 		int slen = strlen(js_str);
-
 		if(slen > 0)
 		{
 			if ( js_str[slen - 1] == ']' ) {
@@ -501,7 +465,6 @@ int chck_req_periodic_pub( magniflex_reg_t *dev, char* pub_js, char* data_js ) {
 	}
 	else
 	{
-
 		ESP_LOGI(TAG,"data_js (%d):\n%s",strlen(data_js), data_js);
 		//	ret = sprintf(pub_js,"{'ts':%ld,'data':", get_curtimestamp());
 		jsn_add_key(pub_js, "ts");
@@ -532,21 +495,13 @@ int chck_req_periodic_pub( magniflex_reg_t *dev, char* pub_js, char* data_js ) {
 
 void dbg_sim_data( magniflex_reg_t *dev ) {
 	for ( int i = 0 ; i < dev->cnt_nsns*RNGM ; i++  ) {
-		//		dev->params[BODY_P].val.fbuf[i] = rand_int_decimal( 1, 2 ); // +- 10;
 		dev->params[BODY_P].val.fbuf[i] = 0.01f; // +- 10;
 	}
 	dev->params[TEMP].val.fbuf[0] = (20.0f + rand_int_decimal( 5, 1 ));
-	//	for ( int i = 0 ; i < dev->cnt_nsns*RNGM ; i++  ) {
-	//		dev->params[TEMP].val.fbuf[i] = (20.0f + rand_int_decimal( 2, 1 ));
-	//	}
 	for ( int i = 0 ; i < RNGM ; i++  ) {
 		dev->params[HUM].val.fbuf[i] = (50.0f + rand_int_decimal( 2, 1 ));
 	}
-	//	for ( int i = 0 ; i < RNGM ; i++  ) {
-	//		dev->params[MAG].val.ibuf[i] = (u32) (500 + rand_int_decimal( 10, 0 ));
-	//	}
 	dev->params[COMPASS].val.ibuf[0] = (u32) (0 + rand_int_decimal( 360, 0 ));
-	//	dev->params[SLEEP_T].val.ibuf[0] = (u32) (0 + rand_int_decimal( 3600*12, 0 ));
 	for ( int i = 0 ; i < RNGM ; i++  ) {
 		dev->params[BREATH_R].val.fbuf[i] = (12.00f + rand_int_decimal( 1, 2 ));
 	}
@@ -582,21 +537,16 @@ int state_updt ( magniflex_reg_t *dev ) {
 	jsn_array_cls(jsstr);
 	jsn_cls(jsstr);
 
-#ifndef PUB_DBG
-	ESP_LOGW(TAG,"state publish %d:\n%s",strlen(jsstr), jsstr);
-#ifdef GIOTCP_PUB
+	ESP_LOGI(TAG,"state publish %d:\n%s",strlen(jsstr), jsstr);
+
 	if ( (get_mqtt_service_state() == MQTT_SERV_CONNECTED) || (get_mqtt_service_state() == MQTT_SERV_SUBCRIBED) ) {
 		return esp_mqtt_client_publish(mqttc, get_gcpiot_pub_topic_state(), "{\"ciao\":\"ciaoval\"}", 0, 1, 0);
 	}
 	else {
-		ESP_LOGW(TAG,"state_updt skip publish: MQTT client not connected.");
+		ESP_LOGI(TAG,"state_updt skip publish: MQTT client not connected.");
 		return -1;
 	}
-#endif
-#else
-	ESP_LOGW(TAG,"state publish %d:\n%s",strlen(jsstr), jsstr);
-	ret = strlen(jsstr);
-#endif
+
 	return ret;
 }
 
@@ -733,8 +683,8 @@ esp_err_t my_mqtt_event_handler( esp_mqtt_event_handle_t event ) {
 	esp_mqtt_client_handle_t client = event->client;
 	int msg_id = 0;
 	// your_context_t *context = event->context;
-
-	switch (event->event_id) {
+	switch (event->event_id)
+	{
 
 	case MQTT_EVENT_CONNECTED:
 		ESP_LOGW(TAG, "MQTT_EVENT_CONNECTED");
@@ -748,23 +698,8 @@ esp_err_t my_mqtt_event_handler( esp_mqtt_event_handle_t event ) {
 		ESP_LOGW(TAG, "MQTT_EVENT_DISCONNECTED");
 		set_mqtt_service_state( MQTT_SERV_DISCONNECTED );
 
-#ifdef GIOTCP_PUB
-
-		//		if(wifi_connected == true)
-		//		{
-		//			esp_mqtt_client_config_t mqttcfg = {
-		//					.uri = GCPIOT_BROKER_URI,
-		//					.event_handle = my_mqtt_event_handler,
-		//					.task_stack = 5*(1024),
-		//			};
-		//			ESP_ERROR_CHECK( mqtt_app_start( &mqttc, &mqttcfg ) );
-		//
-		//		}
-
 		if(wifi_connected == true)
 		{
-			//mqtt_app_start( &mqttc, &mqttcfg );
-
 			if(mqtt_app_start( &mqttc, &mqttcfg ) == ESP_FAIL)
 			{
 				esp_restart();
@@ -774,9 +709,6 @@ esp_err_t my_mqtt_event_handler( esp_mqtt_event_handle_t event ) {
 		{
 			esp_restart();
 		}
-
-#endif
-
 
 		break;
 	case MQTT_EVENT_SUBSCRIBED:
@@ -818,187 +750,15 @@ esp_err_t my_mqtt_event_handler( esp_mqtt_event_handle_t event ) {
 		ESP_LOGW(TAG, "Other event id:%d", event->event_id);
 		break;
 	}
+
 	return ESP_OK;
 }
 
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////
-#ifdef DBG_STATS
-/* FreeRTOS Real Time Stats Example
 
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
- */
-
-#include <stdio.h>
-#include <stdlib.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/semphr.h"
-#include "esp_err.h"
-
-#define NUM_OF_SPIN_TASKS   6
-#define SPIN_ITER           500000  //Actual CPU cycles used will depend on compiler optimization
-#define SPIN_TASK_PRIO      2
-#define STATS_TASK_PRIO     3
-#define STATS_TICKS         pdMS_TO_TICKS(1000)
-#define ARRAY_SIZE_OFFSET   5   //Increase this if print_real_time_stats returns ESP_ERR_INVALID_SIZE
-
-static char task_names[NUM_OF_SPIN_TASKS][configMAX_TASK_NAME_LEN];
-static SemaphoreHandle_t sync_spin_task;
-static SemaphoreHandle_t sync_stats_task;
-
-/**
- * @brief   Function to print the CPU usage of tasks over a given duration.
- *
- * This function will measure and print the CPU usage of tasks over a specified
- * number of ticks (i.e. real time stats). This is implemented by simply calling
- * uxTaskGetSystemState() twice separated by a delay, then calculating the
- * differences of task run times before and after the delay.
- *
- * @note    If any tasks are added or removed during the delay, the stats of
- *          those tasks will not be printed.
- * @note    This function should be called from a high priority task to minimize
- *          inaccuracies with delays.
- * @note    When running in dual core mode, each core will correspond to 50% of
- *          the run time.
- *
- * @param   xTicksToWait    Period of stats measurement
- *
- * @return
- *  - ESP_OK                Success
- *  - ESP_ERR_NO_MEM        Insufficient memory to allocated internal arrays
- *  - ESP_ERR_INVALID_SIZE  Insufficient array size for uxTaskGetSystemState. Trying increasing ARRAY_SIZE_OFFSET
- *  - ESP_ERR_INVALID_STATE Delay duration too short
- */
-static esp_err_t print_real_time_stats(TickType_t xTicksToWait)
-{
-	TaskStatus_t *start_array = NULL, *end_array = NULL;
-	UBaseType_t start_array_size, end_array_size;
-	uint32_t start_run_time, end_run_time;
-	esp_err_t ret;
-
-	//Allocate array to store current task states
-	start_array_size = uxTaskGetNumberOfTasks() + ARRAY_SIZE_OFFSET;
-	start_array = malloc(sizeof(TaskStatus_t) * start_array_size);
-	if (start_array == NULL) {
-		ret = ESP_ERR_NO_MEM;
-		goto exit;
-	}
-	//Get current task states
-	start_array_size = uxTaskGetSystemState(start_array, start_array_size, &start_run_time);
-	if (start_array_size == 0) {
-		ret = ESP_ERR_INVALID_SIZE;
-		goto exit;
-	}
-
-	vTaskDelay(xTicksToWait);
-
-	//Allocate array to store tasks states post delay
-	end_array_size = uxTaskGetNumberOfTasks() + ARRAY_SIZE_OFFSET;
-	end_array = malloc(sizeof(TaskStatus_t) * end_array_size);
-	if (end_array == NULL) {
-		ret = ESP_ERR_NO_MEM;
-		goto exit;
-	}
-	//Get post delay task states
-	end_array_size = uxTaskGetSystemState(end_array, end_array_size, &end_run_time);
-	if (end_array_size == 0) {
-		ret = ESP_ERR_INVALID_SIZE;
-		goto exit;
-	}
-
-	//Calculate total_elapsed_time in units of run time stats clock period.
-	uint32_t total_elapsed_time = (end_run_time - start_run_time);
-	if (total_elapsed_time == 0) {
-		ret = ESP_ERR_INVALID_STATE;
-		goto exit;
-	}
-
-	printf("| Task | Run Time | Percentage\n");
-	//Match each task in start_array to those in the end_array
-	for (int i = 0; i < start_array_size; i++) {
-		int k = -1;
-		for (int j = 0; j < end_array_size; j++) {
-			if (start_array[i].xHandle == end_array[j].xHandle) {
-				k = j;
-				//Mark that task have been matched by overwriting their handles
-				start_array[i].xHandle = NULL;
-				end_array[j].xHandle = NULL;
-				break;
-			}
-		}
-		//Check if matching task found
-		if (k >= 0) {
-			uint32_t task_elapsed_time = end_array[k].ulRunTimeCounter - start_array[i].ulRunTimeCounter;
-			uint32_t percentage_time = (task_elapsed_time * 100UL) / (total_elapsed_time * portNUM_PROCESSORS);
-			printf("| %s | %d | %d%%\n", start_array[i].pcTaskName, task_elapsed_time, percentage_time);
-		}
-	}
-
-	//Print unmatched tasks
-	for (int i = 0; i < start_array_size; i++) {
-		if (start_array[i].xHandle != NULL) {
-			printf("| %s | Deleted\n", start_array[i].pcTaskName);
-		}
-	}
-	for (int i = 0; i < end_array_size; i++) {
-		if (end_array[i].xHandle != NULL) {
-			printf("| %s | Created\n", end_array[i].pcTaskName);
-		}
-	}
-	ret = ESP_OK;
-
-	exit:    //Common return path
-	free(start_array);
-	free(end_array);
-	return ret;
-}
-
-static void spin_task(void *arg)
-{
-	xSemaphoreTake(sync_spin_task, portMAX_DELAY);
-	while (1) {
-		//Consume CPU cycles
-		for (int i = 0; i < SPIN_ITER; i++) {
-			__asm__ __volatile__("NOP");
-		}
-		vTaskDelay(pdMS_TO_TICKS(100));
-	}
-}
-
-static void stats_task(void *arg)
-{
-	xSemaphoreTake(sync_stats_task, portMAX_DELAY);
-
-	//Start all the spin tasks
-	for (int i = 0; i < NUM_OF_SPIN_TASKS; i++) {
-		xSemaphoreGive(sync_spin_task);
-	}
-
-	//Print real time stats periodically
-	while (1) {
-		printf("\n\nGetting real time stats over %d ticks\n", STATS_TICKS);
-		if (print_real_time_stats(STATS_TICKS) == ESP_OK) {
-			printf("Real time stats obtained\n");
-		} else {
-			printf("Error getting real time stats\n");
-		}
-		vTaskDelay(pdMS_TO_TICKS(1000));
-	}
-}
-#endif
-///////////////////////////////////////////////////////////
-//*********************************************************************************************//
 void ctrl_tsk( void *vargs ) {
 
 	//fisitron_mqtt_app_start();
-
-#ifdef GIOTCP_PUB
 
 	sprintf(giotc_cfg_dev_id,GCPIOT_CLIENT_ID_TEMPLATE,macstr);
 	sprintf(giotc_data_topic,DATA_TOPIC_TEMPLATE,macstr);
@@ -1007,7 +767,6 @@ void ctrl_tsk( void *vargs ) {
 	ESP_LOGI(TAG,"giotc_cfg_dev_id %s",giotc_cfg_dev_id);
 	ESP_LOGI(TAG,"giotc_data_topic %s",giotc_data_topic);
 	ESP_LOGI(TAG,"giotc_data_topic_sub %s",giotc_data_topic_sub);
-
 
 	//esp_mqtt_client_config_t mqttcfg = {
 	mqttcfg.uri = GCPIOT_BROKER_URI;
@@ -1019,12 +778,8 @@ void ctrl_tsk( void *vargs ) {
 		esp_restart();
 	}
 
-	//ESP_ERROR_CHECK( mqtt_app_start( &mqttc, &mqttcfg ) );
-#endif
-
-
-#ifdef GIOTCP_PUB
 	long print_heap_tm = get_curtimestamp();
+
 	while ( (get_mqtt_service_state() < MQTT_SERV_CONNECTED) ) {
 		if ( chck_time_int(&print_heap_tm, 30) == 1 ) { 			// DBG: print memory
 #ifdef EN_HEAP_TASK_INFO
@@ -1037,16 +792,11 @@ void ctrl_tsk( void *vargs ) {
 		}
 		vTaskDelay(1000/portTICK_PERIOD_MS);
 	}
-#else
-	rgbled_set_state(RGBLED_DEBUG);
-#endif
 
 
 	ESP_LOGI(TAG, "Run working tasks.");
 
 	// Time variables.
-	long print_log_t = T_US;
-	bool connected_sns = false;
 
 	curdev.cnt_nsns = snsmems_initilaize(curdev.snsmems);
 
@@ -1059,19 +809,14 @@ void ctrl_tsk( void *vargs ) {
 		for ( int i = 0; i < curdev.cnt_nsns; i++ ) {
 			ESP_LOGI(TAG,"sns_addr[%d]: %02x(%d)", i, curdev.snsmems[i].indx, curdev.snsmems[i].indx);
 		}
-
 		// Get saved threshold values.
 		snsmems_nvs_get_thrsh(curdev.prsnc_trsh);
-
 		ESP_LOGI("snsmems_nvs_get_thrsh","prsnc_trsh: %f %f %f", curdev.prsnc_trsh[0],curdev.prsnc_trsh[1],curdev.prsnc_trsh[2]);
-		connected_sns = true;
 	}
-
 
 #ifdef USE_PERIOD_CIRCBUF
 	period_buf_init();
 #endif
-
 
 	while(1)
 	{
@@ -1084,9 +829,7 @@ void ctrl_tsk( void *vargs ) {
 		curdev.params[HUM_A].val.fbuf[0] = h;
 		curdev.params[TEMP_A].val.fbuf[0] = t;
 
-
 		ESP_LOGI(TAG, "Run working tasks. [%f] [%f]",t,h);
-
 
 		if ( curdev.cnt_nsns < 2 ) {
 			ESP_LOGW(TAG,"no snsmems detected, try enumaration.");
@@ -1112,47 +855,32 @@ void ctrl_tsk( void *vargs ) {
 }
 
 
-static int s_retry_num = 0;
-static void event_handler(void* arg, esp_event_base_t event_base,
-		int32_t event_id, void* event_data)
+static void event_handler(void* arg, esp_event_base_t event_base,int32_t event_id, void* event_data)
 {
 	if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-
 		wifi_connected = false;
-
 		esp_wifi_connect();
 	}
 
 	else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
-
 		ESP_LOGI(TAG,"connect to the Wifi success");
 	}
 
 	else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
 		wifi_connected = false;
-
-		//if (s_retry_num < 5) {
 		esp_wifi_connect();
-		//s_retry_num++;
 		ESP_LOGI(TAG, "retry to connect to the Wifi");
-		//}
-
-		//ESP_LOGI(TAG,"connect to the Wifi fail");
 	}
 
 	else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
 		ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
 		ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
-		s_retry_num = 0;
 		wifi_connected = true;
-
 		//xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
 	}
 }
 
 
-
-char ota_url_response_buffer[100] = {0};
 esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 {
 	switch (evt->event_id) {
@@ -1184,8 +912,6 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 
 
 
-
-
 //***************************************************************************************************************************//
 //******************************************************** GPIO MNG *********************************************************//
 //***************************************************************************************************************************//
@@ -1200,7 +926,7 @@ static void gpio_task_example(void* arg)
 {
 	uint32_t io_num;
 	for(;;) {
-		if(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
+		if(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) { // @suppress("Symbol is not resolved")
 
 			switch ( io_num )
 			{
@@ -1645,4 +1371,178 @@ void app_main(void) {
 	vTaskDelete(NULL);
 }
 
+
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+#ifdef DBG_STATS
+/* FreeRTOS Real Time Stats Example
+
+   This example code is in the Public Domain (or CC0 licensed, at your option.)
+
+   Unless required by applicable law or agreed to in writing, this
+   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+   CONDITIONS OF ANY KIND, either express or implied.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#include "esp_err.h"
+
+#define NUM_OF_SPIN_TASKS   6
+#define SPIN_ITER           500000  //Actual CPU cycles used will depend on compiler optimization
+#define SPIN_TASK_PRIO      2
+#define STATS_TASK_PRIO     3
+#define STATS_TICKS         pdMS_TO_TICKS(1000)
+#define ARRAY_SIZE_OFFSET   5   //Increase this if print_real_time_stats returns ESP_ERR_INVALID_SIZE
+
+static char task_names[NUM_OF_SPIN_TASKS][configMAX_TASK_NAME_LEN];
+static SemaphoreHandle_t sync_spin_task;
+static SemaphoreHandle_t sync_stats_task;
+
+/**
+ * @brief   Function to print the CPU usage of tasks over a given duration.
+ *
+ * This function will measure and print the CPU usage of tasks over a specified
+ * number of ticks (i.e. real time stats). This is implemented by simply calling
+ * uxTaskGetSystemState() twice separated by a delay, then calculating the
+ * differences of task run times before and after the delay.
+ *
+ * @note    If any tasks are added or removed during the delay, the stats of
+ *          those tasks will not be printed.
+ * @note    This function should be called from a high priority task to minimize
+ *          inaccuracies with delays.
+ * @note    When running in dual core mode, each core will correspond to 50% of
+ *          the run time.
+ *
+ * @param   xTicksToWait    Period of stats measurement
+ *
+ * @return
+ *  - ESP_OK                Success
+ *  - ESP_ERR_NO_MEM        Insufficient memory to allocated internal arrays
+ *  - ESP_ERR_INVALID_SIZE  Insufficient array size for uxTaskGetSystemState. Trying increasing ARRAY_SIZE_OFFSET
+ *  - ESP_ERR_INVALID_STATE Delay duration too short
+ */
+static esp_err_t print_real_time_stats(TickType_t xTicksToWait)
+{
+	TaskStatus_t *start_array = NULL, *end_array = NULL;
+	UBaseType_t start_array_size, end_array_size;
+	uint32_t start_run_time, end_run_time;
+	esp_err_t ret;
+
+	//Allocate array to store current task states
+	start_array_size = uxTaskGetNumberOfTasks() + ARRAY_SIZE_OFFSET;
+	start_array = malloc(sizeof(TaskStatus_t) * start_array_size);
+	if (start_array == NULL) {
+		ret = ESP_ERR_NO_MEM;
+		goto exit;
+	}
+	//Get current task states
+	start_array_size = uxTaskGetSystemState(start_array, start_array_size, &start_run_time);
+	if (start_array_size == 0) {
+		ret = ESP_ERR_INVALID_SIZE;
+		goto exit;
+	}
+
+	vTaskDelay(xTicksToWait);
+
+	//Allocate array to store tasks states post delay
+	end_array_size = uxTaskGetNumberOfTasks() + ARRAY_SIZE_OFFSET;
+	end_array = malloc(sizeof(TaskStatus_t) * end_array_size);
+	if (end_array == NULL) {
+		ret = ESP_ERR_NO_MEM;
+		goto exit;
+	}
+	//Get post delay task states
+	end_array_size = uxTaskGetSystemState(end_array, end_array_size, &end_run_time);
+	if (end_array_size == 0) {
+		ret = ESP_ERR_INVALID_SIZE;
+		goto exit;
+	}
+
+	//Calculate total_elapsed_time in units of run time stats clock period.
+	uint32_t total_elapsed_time = (end_run_time - start_run_time);
+	if (total_elapsed_time == 0) {
+		ret = ESP_ERR_INVALID_STATE;
+		goto exit;
+	}
+
+	printf("| Task | Run Time | Percentage\n");
+	//Match each task in start_array to those in the end_array
+	for (int i = 0; i < start_array_size; i++) {
+		int k = -1;
+		for (int j = 0; j < end_array_size; j++) {
+			if (start_array[i].xHandle == end_array[j].xHandle) {
+				k = j;
+				//Mark that task have been matched by overwriting their handles
+				start_array[i].xHandle = NULL;
+				end_array[j].xHandle = NULL;
+				break;
+			}
+		}
+		//Check if matching task found
+		if (k >= 0) {
+			uint32_t task_elapsed_time = end_array[k].ulRunTimeCounter - start_array[i].ulRunTimeCounter;
+			uint32_t percentage_time = (task_elapsed_time * 100UL) / (total_elapsed_time * portNUM_PROCESSORS);
+			printf("| %s | %d | %d%%\n", start_array[i].pcTaskName, task_elapsed_time, percentage_time);
+		}
+	}
+
+	//Print unmatched tasks
+	for (int i = 0; i < start_array_size; i++) {
+		if (start_array[i].xHandle != NULL) {
+			printf("| %s | Deleted\n", start_array[i].pcTaskName);
+		}
+	}
+	for (int i = 0; i < end_array_size; i++) {
+		if (end_array[i].xHandle != NULL) {
+			printf("| %s | Created\n", end_array[i].pcTaskName);
+		}
+	}
+	ret = ESP_OK;
+
+	exit:    //Common return path
+	free(start_array);
+	free(end_array);
+	return ret;
+}
+
+static void spin_task(void *arg)
+{
+	xSemaphoreTake(sync_spin_task, portMAX_DELAY);
+	while (1) {
+		//Consume CPU cycles
+		for (int i = 0; i < SPIN_ITER; i++) {
+			__asm__ __volatile__("NOP");
+		}
+		vTaskDelay(pdMS_TO_TICKS(100));
+	}
+}
+
+static void stats_task(void *arg)
+{
+	xSemaphoreTake(sync_stats_task, portMAX_DELAY);
+
+	//Start all the spin tasks
+	for (int i = 0; i < NUM_OF_SPIN_TASKS; i++) {
+		xSemaphoreGive(sync_spin_task);
+	}
+
+	//Print real time stats periodically
+	while (1) {
+		printf("\n\nGetting real time stats over %d ticks\n", STATS_TICKS);
+		if (print_real_time_stats(STATS_TICKS) == ESP_OK) {
+			printf("Real time stats obtained\n");
+		} else {
+			printf("Error getting real time stats\n");
+		}
+		vTaskDelay(pdMS_TO_TICKS(1000));
+	}
+}
+#endif
+///////////////////////////////////////////////////////////
+//*********************************************************************************************//
 

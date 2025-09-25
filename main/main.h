@@ -32,8 +32,6 @@
 //#define EN_OTA
 //#define NEW_OTAURL
 //#define EN_HEAP_TASK_INFO
-#define GIOTCP_PUB
-//#define XPHASE_PUB
 //#define OCTAVE_SERIAL
 #define CIRC_LPF
 
