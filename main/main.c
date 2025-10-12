@@ -11,7 +11,6 @@
 #include "esp_system.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
-//#include "tcpip_adapter.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
@@ -26,7 +25,6 @@
 #include "sdkconfig.h"
 #include "driver/gpio.h"
 #include "esp_spiffs.h"
-
 
 #include "esp_ota_ops.h"
 #include "esp_http_client.h"
@@ -478,7 +476,7 @@ int chck_req_periodic_pub( magniflex_reg_t *dev, char* pub_js, char* data_js ) {
 		if ( (get_mqtt_service_state() == MQTT_SERV_CONNECTED) || (get_mqtt_service_state() == MQTT_SERV_SUBCRIBED) ) {
 			ESP_LOGW(TAG,"periodic publish %d:\n%s",strlen(pub_js), pub_js);
 			ret = esp_mqtt_client_publish(mqttc, giotc_data_topic, pub_js, 0, 1, 0);
-			//ret = esp_mqtt_client_publish(mqtt_fisitron,"/fisitron_topic/log", pub_js, 0, 1, 0);
+			ret = esp_mqtt_client_publish(mqtt_fisitron,FISITRON_DATA_TOPIC_TEMPLATE, pub_js, 0, 1, 0);
 		}
 		else {
 			ESP_LOGW(TAG,"chck_req_periodic_pub skip publish: MQTT client not connected.");
@@ -758,7 +756,7 @@ esp_err_t my_mqtt_event_handler( esp_mqtt_event_handle_t event ) {
 
 void ctrl_tsk( void *vargs ) {
 
-	//fisitron_mqtt_app_start();
+	fisitron_mqtt_app_start();
 
 	sprintf(giotc_cfg_dev_id,GCPIOT_CLIENT_ID_TEMPLATE,macstr);
 	sprintf(giotc_data_topic,DATA_TOPIC_TEMPLATE,macstr);
@@ -931,8 +929,13 @@ static void gpio_task_example(void* arg)
 			switch ( io_num )
 			{
 			case RESET_GPIO: {
+				
+				while(1)
+				{
 
-				ESP_LOGI(TAG,"RESET PARAMETRI --> REBOOT");
+					ESP_LOGI(TAG,"RESET PARAMETRI --> REBOOT");
+				
+				}
 
 				//float tmpf[MAX_NSNS] = {0};
 				//memset(tmpf,0,sizeof(tmpf));
@@ -980,7 +983,7 @@ void gpio_init(void)
 	gpio_config(&io_conf);
 
 	//change gpio intrrupt type for one pin
-	gpio_set_intr_type(GPIO_INPUT_IO_0, GPIO_INTR_ANYEDGE);
+	gpio_set_intr_type(GPIO_INPUT_IO_0, GPIO_INTR_NEGEDGE);
 
 	//create a queue to handle gpio event from isr
 	gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
@@ -1107,76 +1110,76 @@ void app_main(void) {
 	ESP_ERROR_CHECK( err );
 
 
-	// DBG SPIFFS READ CERTS
-	ESP_LOGI(TAG, "Initializing SPIFFS");
-
-	esp_vfs_spiffs_conf_t conf = {
-			.base_path = "/spiffs",
-			.partition_label = NULL,
-			.max_files = 5,
-			.format_if_mount_failed = true
-	};
-
-	// Use settings defined above to initialize and mount SPIFFS filesystem.
-	// Note: esp_vfs_spiffs_register is an all-in-one convenience function.
-	esp_err_t ret = esp_vfs_spiffs_register(&conf);
-
-	if (ret != ESP_OK) {
-		if (ret == ESP_FAIL) {
-			ESP_LOGE(TAG, "Failed to mount or format filesystem");
-		} else if (ret == ESP_ERR_NOT_FOUND) {
-			ESP_LOGE(TAG, "Failed to find SPIFFS partition");
-		} else {
-			ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
-		}
-		return;
-	}
-
-	ESP_LOGI(TAG, "Performing SPIFFS_check().");
-	ret = esp_spiffs_check(conf.partition_label);
-	if (ret != ESP_OK) {
-		ESP_LOGE(TAG, "SPIFFS_check() failed (%s)", esp_err_to_name(ret));
-		return;
-	} else {
-		ESP_LOGI(TAG, "SPIFFS_check() successful");
-	}
-
-	size_t total = 0, used = 0;
-	ret = esp_spiffs_info(conf.partition_label, &total, &used);
-	if (ret != ESP_OK) {
-		ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s). Formatting...", esp_err_to_name(ret));
-		esp_spiffs_format(conf.partition_label);
-		return;
-	} else {
-		ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
-	}
-
-	// Check consistency of reported partiton size info.
-	if (used > total) {
-		ESP_LOGW(TAG, "Number of used bytes cannot be larger than total. Performing SPIFFS_check().");
-		ret = esp_spiffs_check(conf.partition_label);
-		// Could be also used to mend broken files, to clean unreferenced pages, etc.
-		// More info at https://github.com/pellepl/spiffs/wiki/FAQ#powerlosses-contd-when-should-i-run-spiffs_check
-		if (ret != ESP_OK) {
-			ESP_LOGE(TAG, "SPIFFS_check() failed (%s)", esp_err_to_name(ret));
-			return;
-		} else {
-			ESP_LOGI(TAG, "SPIFFS_check() successful");
-		}
-	}
-
-	//	//**********************************************************//
-	ESP_LOGI(TAG, "Reading file");
-	FILE* f = fopen("/spiffs/rsa_private.pem", "r");
-	if (f == NULL) {
-		ESP_LOGE(TAG, "Failed to open file for reading");
-	}
-	else
-	{
-		char line[64];
-		fgets(line, sizeof(line), f);
-		fclose(f);
-	}
+//	// DBG SPIFFS READ CERTS
+//	ESP_LOGI(TAG, "Initializing SPIFFS");
+//
+//	esp_vfs_spiffs_conf_t conf = {
+//			.base_path = "/spiffs",
+//			.partition_label = NULL,
+//			.max_files = 5,
+//			.format_if_mount_failed = true
+//	};
+//
+//	// Use settings defined above to initialize and mount SPIFFS filesystem.
+//	// Note: esp_vfs_spiffs_register is an all-in-one convenience function.
+//	esp_err_t ret = esp_vfs_spiffs_register(&conf);
+//
+//	if (ret != ESP_OK) {
+//		if (ret == ESP_FAIL) {
+//			ESP_LOGE(TAG, "Failed to mount or format filesystem");
+//		} else if (ret == ESP_ERR_NOT_FOUND) {
+//			ESP_LOGE(TAG, "Failed to find SPIFFS partition");
+//		} else {
+//			ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
+//		}
+//		return;
+//	}
+//
+//	ESP_LOGI(TAG, "Performing SPIFFS_check().");
+//	ret = esp_spiffs_check(conf.partition_label);
+//	if (ret != ESP_OK) {
+//		ESP_LOGE(TAG, "SPIFFS_check() failed (%s)", esp_err_to_name(ret));
+//		return;
+//	} else {
+//		ESP_LOGI(TAG, "SPIFFS_check() successful");
+//	}
+//
+//	size_t total = 0, used = 0;
+//	ret = esp_spiffs_info(conf.partition_label, &total, &used);
+//	if (ret != ESP_OK) {
+//		ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s). Formatting...", esp_err_to_name(ret));
+//		esp_spiffs_format(conf.partition_label);
+//		return;
+//	} else {
+//		ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
+//	}
+//
+//	// Check consistency of reported partiton size info.
+//	if (used > total) {
+//		ESP_LOGW(TAG, "Number of used bytes cannot be larger than total. Performing SPIFFS_check().");
+//		ret = esp_spiffs_check(conf.partition_label);
+//		// Could be also used to mend broken files, to clean unreferenced pages, etc.
+//		// More info at https://github.com/pellepl/spiffs/wiki/FAQ#powerlosses-contd-when-should-i-run-spiffs_check
+//		if (ret != ESP_OK) {
+//			ESP_LOGE(TAG, "SPIFFS_check() failed (%s)", esp_err_to_name(ret));
+//			return;
+//		} else {
+//			ESP_LOGI(TAG, "SPIFFS_check() successful");
+//		}
+//	}
+//
+//	//	//**********************************************************//
+//	ESP_LOGI(TAG, "Reading file");
+//	FILE* f = fopen("/spiffs/rsa_private.pem", "r");
+//	if (f == NULL) {
+//		ESP_LOGE(TAG, "Failed to open file for reading");
+//	}
+//	else
+//	{
+//		char line[64];
+//		fgets(line, sizeof(line), f);
+//		fclose(f);
+//	}
 
 	//***************************************************************************************************************************//
 	//******************************************************* GPIO INIT *********************************************************//

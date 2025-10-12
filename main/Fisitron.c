@@ -75,9 +75,16 @@ void fisitron_mqtt_event_handler(void *handler_args, esp_event_base_t base, int3
 
 void fisitron_mqtt_app_start(void)
 {
-    esp_mqtt_client_config_t mqtt_cfg = {
+    esp_mqtt_client_config_t mqtt_cfg = {        
         .uri = FISITRON_BROKER_URI,
+		.client_id = FISITRON_CLIENT_ID_TEMPLATE,
+		.username = FISITRON_USER,
+		.password = FISITRON_PSW,
     };
+    
+    
+
+    
 
     mqtt_fisitron = esp_mqtt_client_init(&mqtt_cfg);
     /* The last argument may be used to pass data to the event handler, in this example mqtt_event_handler */
