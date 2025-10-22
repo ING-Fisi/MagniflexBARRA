@@ -14,12 +14,18 @@
 /* --------------------- VARIABLES ----------------------- *
  * ------------------------------------------------------- */
 // Server certificates
-extern const uint8_t roots_pem_start[] asm("_binary_roots_pem_start");
-extern const uint8_t roots_pem_end[] asm("_binary_roots_pem_end");
-// Client RSA private key
-extern const uint8_t private_key_pem_start[] asm("_binary_rsa_private_pem_start");
-extern const uint8_t private_key_pem_end[] asm("_binary_rsa_private_pem_end");
+//extern const uint8_t roots_pem_start[] asm("_binary_roots_pem_start");
+//extern const uint8_t roots_pem_end[] asm("_binary_roots_pem_end");
+//// Client RSA private key
+//extern const uint8_t private_key_pem_start[] asm("_binary_rsa_private_pem_start");
+//extern const uint8_t private_key_pem_end[] asm("_binary_rsa_private_pem_end");
+//extern const uint8_t private_key_pem_start[];
+//extern const uint8_t private_key_pem_end[];
 
+// Server certificates
+extern const uint8_t roots_pem_start[] asm("_binary_roots_pem_start");
+extern uint8_t private_key_pem[400];
+extern size_t privateKeySize;
 
 /* --------------------- DEFINES ------------------------- *
  * ------------------------------------------------------- */

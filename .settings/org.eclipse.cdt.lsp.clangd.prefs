@@ -1,0 +1,9 @@
+additional_options=--compile-commands-dir\="C\:\\Users\\LENOVO\\PROGETTI\\MAGNIFLEX\\Barra\\build"
+background_index=true
+clangd_path=clangd
+completion_style=detailed
+eclipse.preferences.version=1
+pretty_print=true
+query_driver=C\:\\Espressif\\tools\\xtensa-esp32-elf\\esp-2021r2-patch5-8.4.0\\xtensa-esp32-elf\\bin\\xtensa-esp32-elf-gcc.exe
+set_compilation_database=true
+use_tidy=true

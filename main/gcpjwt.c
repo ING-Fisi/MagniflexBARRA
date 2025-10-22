@@ -46,8 +46,7 @@ long get_expire_t ( void ) {
 int xgiotc_gen_JWT(char *jwtstr, uint32_t len, uint32_t exp_time_s) {
 
 
-	const uint8_t *privateKey = private_key_pem_start;
-	size_t privateKeySize = (private_key_pem_end - private_key_pem_start);
+	//const uint8_t *privateKey = private_key_pem;
 
 
 	//printf("PRIVATE KEY %s [%d]",privateKey,privateKeySize);
@@ -80,7 +79,7 @@ int xgiotc_gen_JWT(char *jwtstr, uint32_t len, uint32_t exp_time_s) {
     // together as a single string.  Now we need to sign them using RSASSA
     mbedtls_pk_context pk_context;
     mbedtls_pk_init(&pk_context);
-    int rc = mbedtls_pk_parse_key(&pk_context, privateKey, privateKeySize, NULL, 0);
+    int rc = mbedtls_pk_parse_key(&pk_context, private_key_pem, privateKeySize, NULL, 0);
     if (rc != 0) {
         ESP_LOGE(TAG,"Failed to mbedtls_pk_parse_key: %d (-0x%x): %s\n", rc, -rc, mbedtlsError(rc));
         return -1;

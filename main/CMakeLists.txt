@@ -1,5 +1,6 @@
 idf_component_register(SRCS "main.c;\
 gble.c;\
+ftp.c;\
 i2c-driver.c;\
 jsn.c;\
 base64url.c;\
