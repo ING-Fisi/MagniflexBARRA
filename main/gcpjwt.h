@@ -24,7 +24,7 @@
 
 // Server certificates
 extern const uint8_t roots_pem_start[] asm("_binary_roots_pem_start");
-extern uint8_t private_key_pem[400];
+extern uint8_t private_key_pem[2000];
 extern size_t privateKeySize;
 
 /* --------------------- DEFINES ------------------------- *

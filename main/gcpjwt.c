@@ -26,7 +26,7 @@
 
 /* --------------------- VARIABLES ----------------------- *
  * ------------------------------------------------------- */
-static const char* TAG = "XGCPJWT";
+static const char* TAG = "GCPJWT";
 
 long expire_t = 0; // TODO: put into GIOTC structure.
 
@@ -45,11 +45,6 @@ long get_expire_t ( void ) {
 
 int xgiotc_gen_JWT(char *jwtstr, uint32_t len, uint32_t exp_time_s) {
 
-
-	//const uint8_t *privateKey = private_key_pem;
-
-
-	//printf("PRIVATE KEY %s [%d]",privateKey,privateKeySize);
 
     char base64Header[100];
     const char header[] = "{\"alg\":\"RS256\",\"typ\":\"JWT\"}";

@@ -35,7 +35,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
-//#include <cstring>
+// #include <cstring>
 #include <stdio.h>
 
 // Custom
@@ -123,7 +123,7 @@ extern char giotc_cfg_dev_id[500];
 extern char giotc_data_topic[500];
 extern char giotc_data_topic_sub[500];
 
-uint8_t private_key_pem[400];
+uint8_t private_key_pem[2000];
 size_t privateKeySize;
 
 /* --------------------- FUNCTIONS ----------------------- *
@@ -810,6 +810,7 @@ void ctrl_tsk(void *vargs) {
 	mqttcfg.uri = GCPIOT_BROKER_URI;
 	mqttcfg.event_handle = my_mqtt_event_handler;
 	mqttcfg.task_stack = 5 * (1024);
+
 	//};
 	if (mqtt_app_start(&mqttc, &mqttcfg) == ESP_FAIL) {
 		esp_restart();
@@ -969,7 +970,7 @@ static void gpio_task_example(void *arg) {
 
 		int reset = gpio_get_level(GPIO_INPUT_IO_0);
 
-		ESP_LOGI(TAG, "RESET VALUE %d", reset);
+		// ESP_LOGI(TAG, "RESET VALUE %d", reset);
 
 		if (reset == 0) {
 			counter_reset++;
@@ -1297,8 +1298,13 @@ void app_main(void) {
 
 		/* the whole file is now loaded in the memory buffer. */
 
-		ESP_LOGI(TAG, "File -> %s", buffer);
+		memset(private_key_pem, 0, 2000 * sizeof(uint8_t));
 		memcpy((private_key_pem), buffer, lSize);
+		privateKeySize = lSize + 1 ;
+
+
+		ESP_LOGI(TAG, "File ->##%s## length %ld", private_key_pem, lSize);
+
 
 		// terminate
 		fclose(f);
