@@ -386,7 +386,7 @@ void prs_bt_js( char *js ) {
 
 
 		totbtl = strlen(str);
-		//ESP_LOGI(TAG,"%s(%d)",str, totbtl);
+		ESP_LOGI(TAG,"%s(%d)",str, totbtl);
 		bt_wr(totbtl, str);
 	} break;
 

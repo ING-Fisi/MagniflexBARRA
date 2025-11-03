@@ -12,7 +12,7 @@
 /* ------ Global Variables ----- */
 static char* TAG = "COMMON"; // log tag
 #define VERSION_MAJOR	3
-#define VERSION_MINOR	3
+#define VERSION_MINOR	4
 #define VERS_CHAR		v
 #define STRINGIFY(x)	#x
 #define VERSION_STR(A,B,C) 	STRINGIFY(C) STRINGIFY(A) "." STRINGIFY(B)

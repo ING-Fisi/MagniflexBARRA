@@ -8,6 +8,7 @@
 #define MAIN_MAIN_H_
 
 #include "mqtt_client.h"
+//#include <cstdint>
 
 /* Firmware version used formatted as string to be used also with 	*
  * Thingsboard for OTA configuration and control 					*/
@@ -66,11 +67,11 @@ typedef enum parameter_type {
 #define RNGM 3 // Statistics length [min, acg, max]
 
 typedef struct {
-	u32 snssize; // Specify if related to single or more SNSMEMS board.
-	u32 rangesize; // Specify if support range data mode. If yes = 3. [min, avg, max]
+	uint32_t snssize; // Specify if related to single or more SNSMEMS board.
+	uint32_t rangesize; // Specify if support range data mode. If yes = 3. [min, avg, max]
 	union {
 		float *fbuf;
-		u32 *ibuf;
+		uint32_t *ibuf;
 	};
 } pdata_t;
 
@@ -86,19 +87,19 @@ typedef enum { MEAN = 0, RANGE, NMODE } data_mode_t;
 typedef enum { DATAINT = 0, DATAMODE, DATAREQ, FORCE_PUB, NCMD } cmd_t;
 
 typedef struct {
-	u16 indx;
-	u16 iscomm;
+	uint16_t indx;
+	uint16_t iscomm;
 } snsmems_t;
 
 typedef struct {
-	u32 cnt_nsns;
+	uint32_t cnt_nsns;
 	snsmems_t snsmems[MAX_NSNS]; 	// Array to hold SNSMEMS I2C indexes.
 	data_mode_t data_mode; 			// Data mode type. TODO: define enum.
-	u8 presence; 					// TODO: evaluate to give 0 or time a body has been detected.
-	s64 t_hold[NPARAM]; 			// Time holding variables.
-	u32 acq_int[NPARAM]; 			// Data acquisition time intervals.
-	u32 pub_int[NPARAM]; 			// Data publish time intervals.
-	u8 data_req[NPARAM]; 			// Request data flags.
+	uint8_t presence; 					// TODO: evaluate to give 0 or time a body has been detected.
+	long t_hold[NPARAM]; 			// Time holding variables.
+	uint32_t acq_int[NPARAM]; 			// Data acquisition time intervals.
+	uint32_t pub_int[NPARAM]; 			// Data publish time intervals.
+	uint8_t data_req[NPARAM]; 			// Request data flags.
 	param_t params[NPARAM]; 		// Parameter structure. Has to be initialized.
 	SemaphoreHandle_t smph;			// Device structure semaphore.
 	float prsnc_trsh[MAX_NSNS*2];	// TODO: implement more sensors routines.
@@ -109,6 +110,7 @@ typedef struct {
 const char *fw_ver_str;
 
 
+void ota_check(void);
 
 ////////////////////////////////////////////////////////////////////////////////////
 

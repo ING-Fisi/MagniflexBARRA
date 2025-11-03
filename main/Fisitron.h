@@ -12,15 +12,16 @@
 #define FISITRON_BROKER_URI	"mqtts://mqtt.fisitron.com:8883"
 #define FISITRON_PROJECT_ID	"magniflex"
 
-#define FISITRON_USER	"MagniFisitron1234!"
-#define FISITRON_PSW	"MagniFlexFisi1234!"
+#define FISITRON_USER	"Fisitron4Debug!"
+#define FISITRON_PSW	"Fisitron4Debug!"
 
-#define FISITRON_CLIENT_ID_TEMPLATE				"apps/magniflex/registries/barre/devices/e86beacc44ac"
-#define FISITRON_DATA_TOPIC_TEMPLATE			"/apps/magniflex/registries/barre/devices/e86beacc44ac/events"
-#define FISITRON_DATA_TOPIC_SUB_TEMPLATE		"/apps/magniflex/registries/barre/devices/e86beacc44ac/commands/#"
+#define FISITRON_CLIENT_ID_TEMPLATE				"apps/magniflex/registries/barre/devices/%s"
+#define FISITRON_DATA_TOPIC_TEMPLATE			"/apps/magniflex/registries/barre/devices/%s/events"
+#define FISITRON_DATA_TOPIC_SUB_TEMPLATE		"/apps/magniflex/registries/barre/devices/%s/commands/#"
 
 
 void fisitron_mqtt_app_start(void);
+int send_fisitron_message(char *pub_js);
 
 
 #endif /* MAIN_FISITRON_H_ */

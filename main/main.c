@@ -304,84 +304,88 @@ void init_magniflex_device(magniflex_reg_t *dev) {
 	dev->data_req[HEART_R] = 1;
 	dev->data_req[GOOD_K] = 1;
 
+	float tmpf[MAX_NSNS] = {0};
+	memset(tmpf, 0, sizeof(tmpf));
+	snsmems_nvs_save_thrsh(tmpf, MAX_NSNS);
+
 	dev->smph = xSemaphoreCreateBinary();
 	if (dev->smph == NULL) {
 		ESP_LOGE(TAG, "error: creating device semaphore.");
 	}
 }
 
-void print_mgnflx_regs(magniflex_reg_t *dev) {
-
-	// Print enumerated devices on bus.
-	ESP_LOGI(TAG, " ----------------------------------- \n"
-				  "Print Magniflex configured registers.\n"
-				  " ----------------------------------- \n"
-				  " ''''''''''''''''''''''''''''''''''' \n"
-				  "Enumereated SNSMENS AFE on bus:");
-	for (int i = 0; i < dev->cnt_nsns; i++) {
-		ESP_LOGI(TAG, "snsmens[%d]: %d", i,
-				 dev->snsmems[i].indx); // Assign I2C bus address.
-	}
-
-	// Default state and data parameter values.
-	ESP_LOGI(TAG,
-			 " ''''''''''''''''''''''''''''''''''' \n"
-			 "Control parameters:\n"
-			 "data mode: %s\n"
-			 "presence: %d",
-			 data_mode_str[dev->data_mode], dev->presence);
-
-	ESP_LOGI(TAG, " ''''''''''''''''''''''''''''''''''' \n"
-				  "Data parameters handling:");
-	for (int i = 0; i < NPARAM; i++) {
-		ESP_LOGI(TAG, " ------------------------- ");
-		ESP_LOGI(TAG, "Parameters[%d]: %s", i, ptyp_str[i]);
-		ESP_LOGI(TAG, "t_hold: %lld", dev->t_hold[i]);
-		ESP_LOGI(TAG, "pub_int: %d", dev->pub_int[i]);
-		ESP_LOGI(TAG, "data_req: %d", dev->data_req[i]);
-		ESP_LOGI(TAG, "type: %c, sns: %d, rngs: %d, len: %d",
-				 dev->params[i].type, dev->params[i].val.snssize,
-				 dev->params[i].val.rangesize,
-				 (dev->params[i].val.rangesize * dev->params[i].val.snssize));
-		if (dev->params[i].type == 'f') {
-			esp_log_buffer_hex_internal(
-				TAG, dev->params[i].val.fbuf,
-				(dev->params[i].val.rangesize * dev->params[i].val.snssize) *
-					sizeof(float),
-				ESP_LOG_VERBOSE);
-			//			float *pf =(float*) &(dev->params[i].val.fbuf);
-			for (int j = 0; j < (dev->params[i].val.rangesize *
-								 dev->params[i].val.snssize);
-				 j++) {
-				ESP_LOGI(TAG, "[%i] %.2f", j, dev->params[i].val.fbuf[j]);
-			}
-		} else if (dev->params[i].type == 'i') {
-			esp_log_buffer_hex_internal(
-				TAG, dev->params[i].val.ibuf,
-				(dev->params[i].val.rangesize * dev->params[i].val.snssize) *
-					sizeof(float),
-				ESP_LOG_VERBOSE);
-			//			u32 *pi =(u32*) &(dev->params[i].val.ibuf);
-			for (int j = 0; j < (dev->params[i].val.rangesize *
-								 dev->params[i].val.snssize);
-				 j++) {
-				ESP_LOGI(TAG, "[%i] %d", j, dev->params[i].val.ibuf[j]);
-			}
-			if ((dev->params[i].val.rangesize * dev->params[i].val.snssize ==
-				 0)) {
-				ESP_LOGI(TAG, "Components type.");
-				for (int k = 0; k < 3; k++) {
-					ESP_LOGI(TAG, "[%i] %d", k, dev->params[i].val.ibuf[k]);
-				}
-			}
-		} else {
-			ESP_LOGE(TAG, "error: parameter type not recognized.");
-		}
-	}
-
-	ESP_LOGI(TAG, " ----------------------------------- \n"
-				  " ----------------------------------- \n");
-}
+// void print_mgnflx_regs(magniflex_reg_t *dev) {
+//
+//	// Print enumerated devices on bus.
+//	ESP_LOGI(TAG, " ----------------------------------- \n"
+//				  "Print Magniflex configured registers.\n"
+//				  " ----------------------------------- \n"
+//				  " ''''''''''''''''''''''''''''''''''' \n"
+//				  "Enumereated SNSMENS AFE on bus:");
+//	for (int i = 0; i < dev->cnt_nsns; i++) {
+//		ESP_LOGI(TAG, "snsmens[%d]: %d", i,
+//				 dev->snsmems[i].indx); // Assign I2C bus address.
+//	}
+//
+//	// Default state and data parameter values.
+//	ESP_LOGI(TAG,
+//			 " ''''''''''''''''''''''''''''''''''' \n"
+//			 "Control parameters:\n"
+//			 "data mode: %s\n"
+//			 "presence: %d",
+//			 data_mode_str[dev->data_mode], dev->presence);
+//
+//	ESP_LOGI(TAG, " ''''''''''''''''''''''''''''''''''' \n"
+//				  "Data parameters handling:");
+//	for (int i = 0; i < NPARAM; i++) {
+//		ESP_LOGI(TAG, " ------------------------- ");
+//		ESP_LOGI(TAG, "Parameters[%d]: %s", i, ptyp_str[i]);
+//		ESP_LOGI(TAG, "t_hold: %lld", dev->t_hold[i]);
+//		ESP_LOGI(TAG, "pub_int: %d", dev->pub_int[i]);
+//		ESP_LOGI(TAG, "data_req: %d", dev->data_req[i]);
+//		ESP_LOGI(TAG, "type: %c, sns: %d, rngs: %d, len: %d",
+//				 dev->params[i].type, dev->params[i].val.snssize,
+//				 dev->params[i].val.rangesize,
+//				 (dev->params[i].val.rangesize * dev->params[i].val.snssize));
+//		if (dev->params[i].type == 'f') {
+//			esp_log_buffer_hex_internal(
+//				TAG, dev->params[i].val.fbuf,
+//				(dev->params[i].val.rangesize * dev->params[i].val.snssize) *
+//					sizeof(float),
+//				ESP_LOG_VERBOSE);
+//			//			float *pf =(float*) &(dev->params[i].val.fbuf);
+//			for (int j = 0; j < (dev->params[i].val.rangesize *
+//								 dev->params[i].val.snssize);
+//				 j++) {
+//				ESP_LOGI(TAG, "[%i] %.2f", j, dev->params[i].val.fbuf[j]);
+//			}
+//		} else if (dev->params[i].type == 'i') {
+//			esp_log_buffer_hex_internal(
+//				TAG, dev->params[i].val.ibuf,
+//				(dev->params[i].val.rangesize * dev->params[i].val.snssize) *
+//					sizeof(float),
+//				ESP_LOG_VERBOSE);
+//			//			u32 *pi =(u32*) &(dev->params[i].val.ibuf);
+//			for (int j = 0; j < (dev->params[i].val.rangesize *
+//								 dev->params[i].val.snssize);
+//				 j++) {
+//				ESP_LOGI(TAG, "[%i] %d", j, dev->params[i].val.ibuf[j]);
+//			}
+//			if ((dev->params[i].val.rangesize * dev->params[i].val.snssize ==
+//				 0)) {
+//				ESP_LOGI(TAG, "Components type.");
+//				for (int k = 0; k < 3; k++) {
+//					ESP_LOGI(TAG, "[%i] %d", k, dev->params[i].val.ibuf[k]);
+//				}
+//			}
+//		} else {
+//			ESP_LOGE(TAG, "error: parameter type not recognized.");
+//		}
+//	}
+//
+//	ESP_LOGI(TAG, " ----------------------------------- \n"
+//				  " ----------------------------------- \n");
+// }
 
 // Function that populate data JSON.
 void param_add2_json(param_t *par, char *pname, data_mode_t m, char *s) {
@@ -482,7 +486,8 @@ int chck_req_periodic_pub(magniflex_reg_t *dev, char *pub_js, char *data_js) {
 	if (strlen(data_js) == 0) { // No data available.
 		ESP_LOGI(TAG, "No data available");
 	} else {
-		ESP_LOGI(TAG, "data_js (%d):\n%s", strlen(data_js), data_js);
+		ESP_LOGI(TAG, "data_js (%d):\n%s PRESENCE[%d]", strlen(data_js),
+				 data_js, dev->presence);
 		//	ret = sprintf(pub_js,"{'ts':%ld,'data':", get_curtimestamp());
 		jsn_add_key(pub_js, "ts");
 		int tmp_ts = get_curtimestamp();
@@ -496,8 +501,11 @@ int chck_req_periodic_pub(magniflex_reg_t *dev, char *pub_js, char *data_js) {
 			ESP_LOGW(TAG, "periodic publish %d:\n%s", strlen(pub_js), pub_js);
 			ret = esp_mqtt_client_publish(mqttc, giotc_data_topic, pub_js, 0, 1,
 										  0);
-			ret = esp_mqtt_client_publish(
-				mqtt_fisitron, FISITRON_DATA_TOPIC_TEMPLATE, pub_js, 0, 1, 0);
+
+			ret = send_fisitron_message(pub_js);
+			//			ret = esp_mqtt_client_publish(
+			//				mqtt_fisitron, fisitron_data_topic, pub_js, 0, 1,
+			// 0);
 		} else {
 			ESP_LOGW(TAG, "chck_req_periodic_pub skip publish: MQTT client not "
 						  "connected.");
@@ -813,86 +821,98 @@ void ctrl_tsk(void *vargs) {
 
 	//};
 	if (mqtt_app_start(&mqttc, &mqttcfg) == ESP_FAIL) {
-		esp_restart();
-	}
-
-	long print_heap_tm = get_curtimestamp();
-
-	while ((get_mqtt_service_state() < MQTT_SERV_CONNECTED)) {
-		if (chck_time_int(&print_heap_tm, 30) == 1) { // DBG: print memory
-#ifdef EN_HEAP_TASK_INFO
-			esp_dump_per_task_heap_info();
-#endif
-			ESP_LOGI(TAG, "free heap: %8u B (NOW), min: %8u B (MIN)",
-					 esp_get_free_heap_size(),
-					 esp_get_minimum_free_heap_size());
-			ESP_LOGI(TAG, "used heap: %8u B (NOW), min: %8u B (MAX)",
-					 used_heap - esp_get_free_heap_size(),
-					 used_heap - esp_get_minimum_free_heap_size());
-		}
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
-	}
-
-	ESP_LOGI(TAG, "Run working tasks.");
-
-	// Time variables.
-
-	curdev.cnt_nsns = snsmems_initilaize(curdev.snsmems);
-
-	if (curdev.cnt_nsns < 2) {
-		ESP_LOGW(TAG, "no snsmems detected, try enumaration.");
+		// esp_restart();
 	} else {
-		ESP_LOGI("snsmems_acq_tsk", "detected: %d SNSMEMS", curdev.cnt_nsns);
-		for (int i = 0; i < curdev.cnt_nsns; i++) {
-			ESP_LOGI(TAG, "sns_addr[%d]: %02x(%d)", i, curdev.snsmems[i].indx,
-					 curdev.snsmems[i].indx);
-		}
-		// Get saved threshold values.
-		snsmems_nvs_get_thrsh(curdev.prsnc_trsh);
-		ESP_LOGI("snsmems_nvs_get_thrsh", "prsnc_trsh: %f %f %f",
-				 curdev.prsnc_trsh[0], curdev.prsnc_trsh[1],
-				 curdev.prsnc_trsh[2]);
-	}
 
-#ifdef USE_PERIOD_CIRCBUF
-	period_buf_init();
-#endif
+		//***************************************************************************//
+		//***************************************************************************//
+		//****************************CTRL
+		// TASK**************************************//
+		//***************************************************************************//
+		//***************************************************************************//
+		long print_heap_tm = get_curtimestamp();
 
-	while (1) {
-
-		if (ftp_getstate() == E_FTP_STE_CONNECTED) {
-
-			vTaskDelay(20 / portTICK_PERIOD_MS);
-
-		} else {
-
-			float t = 0.0f, h = 0.0f;
-			// Acquire environment parameters.
-			MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_TEMPERATURE, &t);
-			MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_HUMIDITY, &h);
-
-			curdev.params[HUM_A].val.fbuf[0] = h;
-			curdev.params[TEMP_A].val.fbuf[0] = t;
-
-			ESP_LOGI(TAG, "Run working tasks. [%f] [%f]", t, h);
-
-			if (curdev.cnt_nsns < 2) {
-				ESP_LOGW(TAG, "no snsmems detected, try enumaration.");
-			} else {
-				acq_snsmems_data(&curdev);
+		while ((get_mqtt_service_state() < MQTT_SERV_CONNECTED)) {
+			if (chck_time_int(&print_heap_tm, 30) == 1) { // DBG: print memory
+				ESP_LOGI(TAG, "free heap: %8u B (NOW), min: %8u B (MIN)",
+						 esp_get_free_heap_size(),
+						 esp_get_minimum_free_heap_size());
+				ESP_LOGI(TAG, "used heap: %8u B (NOW), min: %8u B (MAX)",
+						 used_heap - esp_get_free_heap_size(),
+						 used_heap - esp_get_minimum_free_heap_size());
 			}
-
-			memset(js, 0, sizeof(js));
-			memset(pjsdata, 0, sizeof(pjsdata));
-			chck_req_periodic_pub(&curdev, js, pjsdata);
-
-			gpio_set_level(GPIO_OUTPUT_IO_0, 1000);
-			vTaskDelay(20 / portTICK_PERIOD_MS);
-			gpio_set_level(GPIO_OUTPUT_IO_0, 0);
-			vTaskDelay(20 / portTICK_PERIOD_MS);
+			vTaskDelay(1000 / portTICK_PERIOD_MS);
 		}
-	}
 
+		ESP_LOGI(TAG, "Run working tasks.");
+
+		curdev.cnt_nsns = snsmems_initilaize(curdev.snsmems);
+
+		if (curdev.cnt_nsns < 2) {
+			ESP_LOGW(TAG, "no snsmems detected, try enumaration.");
+		} else {
+			ESP_LOGI("snsmems_acq_tsk", "detected: %d SNSMEMS",
+					 curdev.cnt_nsns);
+			for (int i = 0; i < curdev.cnt_nsns; i++) {
+				ESP_LOGI(TAG, "sns_addr[%d]: %02x(%d)", i,
+						 curdev.snsmems[i].indx, curdev.snsmems[i].indx);
+			}
+			// Get saved threshold values.
+			snsmems_nvs_get_thrsh(curdev.prsnc_trsh);
+			ESP_LOGI("snsmems_nvs_get_thrsh", "prsnc_trsh: %f %f %f",
+					 curdev.prsnc_trsh[0], curdev.prsnc_trsh[1],
+					 curdev.prsnc_trsh[2]);
+		}
+
+		period_buf_init();
+
+		while (1) {
+
+			if (ftp_getstate() == E_FTP_STE_CONNECTED) {
+
+				vTaskDelay(20 / portTICK_PERIOD_MS);
+
+			} else {
+
+				float t = 0.0f, h = 0.0f;
+				// Acquire environment parameters.
+				MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_TEMPERATURE, &t);
+				MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_HUMIDITY, &h);
+
+				curdev.params[HUM_A].val.fbuf[0] = h;
+				curdev.params[TEMP_A].val.fbuf[0] =
+					curdev.params[TEMP].val.fbuf[0]; // t;
+
+				ESP_LOGI(TAG, "Run working tasks. [%f] [%f]", t, h);
+
+				if (curdev.cnt_nsns < 2) {
+					ESP_LOGW(TAG, "no snsmems detected, try enumaration.");
+
+					vTaskDelay(1000 / portTICK_PERIOD_MS);
+
+				} else {
+					acq_snsmems_data(&curdev);
+
+					memset(js, 0, sizeof(js));
+					memset(pjsdata, 0, sizeof(pjsdata));
+					chck_req_periodic_pub(&curdev, js, pjsdata);
+				}
+
+				gpio_set_level(GPIO_OUTPUT_IO_0, 1000);
+				vTaskDelay(20 / portTICK_PERIOD_MS);
+				gpio_set_level(GPIO_OUTPUT_IO_0, 0);
+				vTaskDelay(20 / portTICK_PERIOD_MS);
+
+				int ret = send_fisitron_message("HEART_BEAT");
+			}
+		}
+
+		//***************************************************************************//
+		//***************************************************************************//
+		//***************************************************************************//
+		//***************************************************************************//
+		//***************************************************************************//
+	}
 	vTaskDelete(NULL);
 }
 
@@ -1115,7 +1135,7 @@ void gpio_init(void) {
 //***************************************************** OTA REQUEST
 //*********************************************************//
 //***************************************************************************************************************************//
-
+//
 // #define MAX_HTTP_RECV_BUFFER 512
 #define MAX_HTTP_OUTPUT_BUFFER 128
 
@@ -1124,17 +1144,16 @@ static void ota_request(char *output_buffer, int buffer_len) {
 	// char output_buffer[128] = {0};   // Buffer to store response of http
 	// request
 	int content_length = 0;
-
 	char otaurl[300];
-	sprintf(otaurl,
-			"http://magniflex.iot-update.datasmart.cloud/"
-			"?v=%s&idapp=%s&iddevice=%s",
-			fw_ver_str, "mag", macstr);
+	//	sprintf(otaurl,
+	//			"http://magniflex.iot-update.datasmart.cloud/"
+	//			"?v=%s&idapp=%s&iddevice=%s",
+	//			fw_ver_str, "mag", macstr);
+	sprintf(otaurl, "http://mqtt.fisitron.com:8080/ota/fw_ver_str.txt");
+
 	ESP_LOGI(TAG, "OTAURL = %s", otaurl);
 
-	esp_http_client_config_t config = {
-		//.url = "http://"CONFIG_EXAMPLE_HTTP_ENDPOINT"/get",
-		.url = otaurl};
+	esp_http_client_config_t config = {.url = otaurl};
 	esp_http_client_handle_t client = esp_http_client_init(&config);
 
 	// GET Request
@@ -1163,6 +1182,30 @@ static void ota_request(char *output_buffer, int buffer_len) {
 	}
 	esp_http_client_close(client);
 	esp_http_client_cleanup(client);
+}
+
+void ota_check(void) {
+
+	char output_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0};
+	ota_request(output_buffer, MAX_HTTP_OUTPUT_BUFFER);
+
+	if (strcmp(output_buffer, fw_ver_str) != 0) {
+		ESP_LOGI(TAG, "%s", output_buffer);
+
+		esp_http_client_config_t config_ota = {
+			.url = "http://mqtt.fisitron.com:8080/ota/magniflex.bin",
+			//.cert_pem = NULL,
+			.event_handler = _http_event_handler,
+			.keep_alive_enable = true,
+		};
+
+		esp_err_t retur = esp_https_ota(&config_ota);
+		if (retur == ESP_OK) {
+			esp_restart();
+		} else {
+			ESP_LOGE(TAG, "Firmware upgrade failed");
+		}
+	}
 }
 
 //***************************************************************************************************************************//
@@ -1264,6 +1307,7 @@ void app_main(void) {
 
 	char *partition_label = "storage";
 	esp_err_t ret = mountLITTLEFS(partition_label, MOUNT_POINT);
+	memset(private_key_pem, 0, 2000 * sizeof(uint8_t));
 
 	ESP_LOGI(TAG, "Reading file");
 	FILE *f = fopen("/root/Cert/rsa_private.pem", "r");
@@ -1298,13 +1342,10 @@ void app_main(void) {
 
 		/* the whole file is now loaded in the memory buffer. */
 
-		memset(private_key_pem, 0, 2000 * sizeof(uint8_t));
 		memcpy((private_key_pem), buffer, lSize);
-		privateKeySize = lSize + 1 ;
-
+		privateKeySize = lSize + 1;
 
 		ESP_LOGI(TAG, "File ->##%s## length %ld", private_key_pem, lSize);
-
 
 		// terminate
 		fclose(f);
@@ -1338,6 +1379,9 @@ void app_main(void) {
 	//********************************************************//
 	//***************************************************************************************************************************//
 	get_mac_str(macstr);
+	
+	//nvs_flash_erase();
+
 
 	//***************************************************************************************************************************//
 	//******************************************************** WIFI INIT
@@ -1458,27 +1502,6 @@ void app_main(void) {
 	//******************************************************** OTA
 	//**************************************************************//
 	//***************************************************************************************************************************//
-
-	char output_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0};
-	ota_request(output_buffer, MAX_HTTP_OUTPUT_BUFFER);
-
-	if (strcmp(output_buffer, "none") != 0) {
-		ESP_LOGI(TAG, "%s", output_buffer);
-
-		esp_http_client_config_t config_ota = {
-			.url = output_buffer, // output_buffer,
-			.cert_pem = NULL,	  //(char *)server_cert_pem_start,
-			.event_handler = _http_event_handler,
-			.keep_alive_enable = true,
-		};
-
-		esp_err_t ret = esp_https_ota(&config_ota);
-		if (ret == ESP_OK) {
-			esp_restart();
-		} else {
-			ESP_LOGE(TAG, "Firmware upgrade failed");
-		}
-	}
 
 	//***************************************************************************************************************************//
 	//******************************************************** SNTP
