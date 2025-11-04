@@ -50,7 +50,7 @@
 #define MAX_NSNS 	10
 
 
-#define OFFSET_TEMP 6
+//#define OFFSET_TEMP 10
 
 typedef enum parameter_type {
 	BODY_P = 0,
