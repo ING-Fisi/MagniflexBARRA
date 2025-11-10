@@ -13,6 +13,8 @@
 
 #include "mqtt.h"
 
+#include <json_parser.h>
+
 static const char *TAG = "FISITRON_DEBUG";
 
 esp_mqtt_client_handle_t mqtt_fisitron;
@@ -77,19 +79,33 @@ void fisitron_mqtt_event_handler(void *handler_args, esp_event_base_t base,
 
 		ESP_LOGI(TAG, "[%d]->%s", event->data_len, event->data);
 
-		if (strncmp(event->data, "RESET_BARRA", event->data_len) == 0) {
-			ESP_LOGI(TAG, "COMMAND_RESET");
-			esp_restart();
-		}
+		jparse_ctx_t jctx;
+		int ret = json_parse_start(&jctx, event->data, event->data_len);
+		if (ret != OS_SUCCESS) {
+			printf("Parser failed\n");
+		} else {
 
-		if (strncmp(event->data, "TARA_BARRA", event->data_len) == 0) {
-			ESP_LOGI(TAG, "COMMAND_TARA");
-			tare_request = true;
-		}
+//			if (json_obj_get_float(&jctx, "float_val", &float_val) ==
+//				OS_SUCCESS)
+//				printf("float_val %f\n", float_val);
+//
+//			if (json_obj_get_int(&jctx, "int_val", &int_val) == OS_SUCCESS)
+//				printf("int_val %d\n", int_val);
 
-		if (strncmp(event->data, "UPGRADE_BARRA", event->data_len) == 0) {
-			ESP_LOGI(TAG, "UPGRADE_BARRA");
-			ota_check();
+			if (strncmp(event->data, "RESET_BARRA", event->data_len) == 0) {
+				ESP_LOGI(TAG, "COMMAND_RESET");
+				esp_restart();
+			}
+
+			if (strncmp(event->data, "TARA_BARRA", event->data_len) == 0) {
+				ESP_LOGI(TAG, "COMMAND_TARA");
+				tare_request = true;
+			}
+
+			if (strncmp(event->data, "UPGRADE_BARRA", event->data_len) == 0) {
+				ESP_LOGI(TAG, "UPGRADE_BARRA");
+				ota_check();
+			}
 		}
 
 		break;
