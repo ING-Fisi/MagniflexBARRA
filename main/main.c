@@ -377,8 +377,7 @@ void print_mgnflx_regs(magniflex_reg_t *dev) {
 // Function that populate data JSON.
 void param_add2_json(param_t *par, char *pname, data_mode_t m, char *s) {
 	u32 nsns = par->val.snssize, rngs = par->val.rangesize;
-	int avgindx =
-		rngs <= 1 ? 0 : 1; // Get index of the average elements. [min, avg, max]
+	int avgindx = rngs <= 1 ? 0 : 1; // Get index of the average elements. [min, avg, max]
 	jsn_add_key(s, pname);
 	switch (par->type) {
 	case 'f': {
@@ -396,38 +395,10 @@ void param_add2_json(param_t *par, char *pname, data_mode_t m, char *s) {
 		case RANGE: {
 			if (nsns == 0) { // Component value! Add all 3 component to JSON.
 				jsn_set_float_key(s, (par->val.fbuf), 3, 1, 1, 1);
-				//						jsn_set_float_key(s, par->val.fbuf, 3);
-				//						stridx = sprintf(tmpstr, "'%s':[",
-				//pname); 						for ( int i = 0 ; i < 3 ; i++ ) { 							stridx +=
-				//sprintf((tmpstr + stridx), "%.2f,",par->val.fbuf[i]);
-				//						}
-				//						stridx = sprintf((tmpstr + stridx - 1),
-				//"],"); // Remove last ',' and add "]}".
 			} else if (nsns == 1) { // Single sensor parameter.
 				jsn_set_float_key(s, (par->val.fbuf), rngs, 1, 1, 1);
-				//						jsn_set_float_key(s, par->val.fbuf,
-				//rngs); 						stridx = sprintf(tmpstr, "'%s':[", pname); 						for ( int i
-				//= 0 ; i < rngs ; i++ ) { 							stridx += sprintf((tmpstr + stridx),
-				//"%.2f,",(float) *(par->val.fbuf + i));
-				//						}
-				//						stridx = sprintf((tmpstr + stridx - 1),
-				//"],"); // Remove last ',' and add "]}".
 			} else {
 				jsn_set_float_key(s, par->val.fbuf, nsns, 1, rngs, 1);
-				//						for ( int i = 0; i < nsns; i++ ) {
-				//							jsn_set_float_key(s,
-				//(par->val.fbuf+nsns*rngs), rngs);
-				//						}
-				//						stridx = sprintf(tmpstr, "'%s':[",
-				//pname); 						for ( int i = 0 ; i < (nsns*rngs) ; i++ ) { 							stridx +=
-				//sprintf((tmpstr + stridx), "%.2f,",(float) *(par->val.fbuf +
-				//i)); 							if ( (i % rngs) == 2 ) { 								stridx += sprintf((tmpstr +
-				//stridx - 1), "],["); // Remove last ',' and add "],[".
-				//								stridx--;
-				//							}
-				//						}
-				//						stridx = sprintf((tmpstr + stridx - 3),
-				//"],"); // Remove last "],[" and add "]}".
 			}
 		} break;
 		default: {
@@ -475,15 +446,9 @@ void param_chck_pub(magniflex_reg_t *dev, char *js_str) {
 
 	// if(dev->presence == 1)
 	if (true) {
-		// strcat(js_str,"{'wifi':[{'ssid':'Vodafone-A37838841','security':'WPA
-		// WPA2 PSK','rssi':'-45'}"); dev->presence = 0;
 		for (int i = 0; i < NPARAM; i++) {
-
-			// if((dev->data_req[i] == 1)&&(chck_time_int((long*)
-			// &(dev->t_hold[i]), dev->pub_int[i]) == 1))
 			if (dev->data_req[i] == 1) {
-				param_add2_json(&(dev->params[i]), (char *)ptyp_str[i],
-								dev->data_mode, js_str);
+				param_add2_json(&(dev->params[i]), (char *)ptyp_str[i],dev->data_mode, js_str);
 			}
 		}
 		int slen = strlen(js_str);
@@ -507,13 +472,7 @@ int chck_req_periodic_pub(magniflex_reg_t *dev, char *pub_js, char *data_js) {
 	if (strlen(data_js) == 0) { // No data available.
 		ESP_LOGI(TAG, "No data available");
 	} else {
-
-		ESP_LOGI(TAG, "data_js (%d):%s  [%d]\n", strlen(data_js), data_js,
-				 curdev.presence);
-		//	ret = sprintf(pub_js,"{'ts':%ld,'data':", get_curtimestamp());
-
-		// print_mgnflx_regs( &curdev );
-		//  Reset JSON.
+		ESP_LOGI(TAG, "data_js (%d):%s  [%d]\n", strlen(data_js), data_js,curdev.presence);
 		pub_js[0] = 0;
 		data_js[0] = 0;
 	}
@@ -789,7 +748,7 @@ void ctrl_tsk(void *vargs) {
 		MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_TEMPERATURE, &t);
 		MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_HUMIDITY, &h);
 
-		// ESP_LOGI(TAG, "Run working tasks. [%f] [%f]",t,h);
+		ESP_LOGI(TAG, "Run working tasks. [%f] [%f]",t,h);
 
 		if (curdev.cnt_nsns < 2) {
 			ESP_LOGW(TAG, "no snsmems detected, try enumaration.");
@@ -797,16 +756,15 @@ void ctrl_tsk(void *vargs) {
 			acq_snsmems_data(&curdev);
 		}
 
-		curdev.params[HUM_A].val.fbuf[0] = h;
-		curdev.params[TEMP_A].val.fbuf[0] = t;
-		curdev.params[HUM].val.fbuf[0] = h;
-		curdev.params[TEMP].val.fbuf[0] = t;
+		curdev.params[HUM].val.fbuf[1] = h;
+		curdev.params[HUM_A].val.fbuf[0] = h - 5;
+		curdev.params[TEMP_A].val.fbuf[0] = curdev.params[TEMP].val.fbuf[0] - 3;
 
 		memset(js, 0, sizeof(js));
 		memset(pjsdata, 0, sizeof(pjsdata));
 		chck_req_periodic_pub(&curdev, js, pjsdata);
 
-		gpio_set_level(GPIO_OUTPUT_IO_0, 1000);
+		gpio_set_level(GPIO_OUTPUT_IO_0, 100);
 		vTaskDelay(20 / portTICK_PERIOD_MS);
 		gpio_set_level(GPIO_OUTPUT_IO_0, 0);
 		vTaskDelay(20 / portTICK_PERIOD_MS);

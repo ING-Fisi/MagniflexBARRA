@@ -412,15 +412,20 @@ void acq_snsmems_env_data ( magniflex_reg_t *dev ) {
 
 			// Assign HUM parameter for each current SNSMEMS.
 			// ---------------------------------------------.
-			if (  hum[i] < dev->params[HUM].val.fbuf[0] ) { // Check for MIN
-				ESP_LOGD(TAG,"HUM value MIN found.");
-				dev->params[HUM].val.fbuf[0] = hum[i];
-			}
-			if ( hum[i] > dev->params[HUM].val.fbuf[2] ) { 	// Check for MAX.
-				ESP_LOGD(TAG,"HUM value MAX found.");
-				dev->params[HUM].val.fbuf[2] = hum[i];
-			}
-			dev->params[HUM].val.fbuf[1] = hum[i]; 			// Assign AVG.
+			
+			
+//			if (  hum[i] < dev->params[HUM].val.fbuf[0] ) { // Check for MIN
+//				ESP_LOGD(TAG,"HUM value MIN found.");
+//				dev->params[HUM].val.fbuf[0] = hum[i];
+//			}
+//			if ( hum[i] > dev->params[HUM].val.fbuf[2] ) { 	// Check for MAX.
+//				ESP_LOGD(TAG,"HUM value MAX found.");
+//				dev->params[HUM].val.fbuf[2] = hum[i];
+//			}
+//			dev->params[HUM].val.fbuf[1] = hum[i]; 			// Assign AVG.
+
+
+
 
 			// Calculate Compass from magnetometer components.
 			// ----------------------------------------------.
@@ -735,7 +740,7 @@ int acq_snsmems_data( magniflex_reg_t *dev ) {
 
 
 
-	//acq_snsmems_env_data(dev);
+	acq_snsmems_env_data(dev);
 
 	// 4. READ READS PERIODS NUMBER
 	// ------------------------------------------------------------------
@@ -773,29 +778,6 @@ int acq_snsmems_data( magniflex_reg_t *dev ) {
 			ESP_LOGW(TAG,"SNSMEMS %d didn't replayed, goes to next iteration.", dev->snsmems[i].indx);
 			continue;
 		}
-
-		//		ESP_LOGI(TAG, "------------------- board %d ----------------------", dev->snsmems[i].indx);
-		//		for ( int j = 0 ; j < 6 ; j++ ) { // DBG.
-		//			ESP_LOGI(TAG, "period[%d][%d] = %d.", i, j, periods[i][j]);
-		//		}
-		//		for ( int j = 0 ; j < 6 ; j++ ) { // DBG.
-		//			ESP_LOGI(TAG, "Min/Max[%d][%d] = %d.", i, j, minmax[i][j]);
-		//		}
-
-		//		ESP_LOGI(TAG,"periods:\n"
-		//				"\tAccZHigh %d \tAccZLow %d\n"
-		//				"\tGyroXHigh %d \tGyroXLow %d\n"
-		//				"\tGyroYHigh %d \tGyroYLow %d",
-		//				periods[i][0], periods[i][1],
-		//				periods[i][2], periods[i][3],
-		//				periods[i][4], periods[i][5]);
-		//		ESP_LOGI(TAG,"Min/Max:\n"
-		//				"\tAccZMax %d \tAccZMin %d \tDelta %d\n"
-		//				"\tGyroXMax %d \tGyroXMin %d \tDelta %d\n"
-		//				"\tGyroYMax %d \tGyroYMin %d \tDelta %d",
-		//				minmax[i][0], minmax[i][1], minmax[i][0]-minmax[i][1],
-		//				minmax[i][2], minmax[i][3], minmax[i][2]-minmax[i][3],
-		//				minmax[i][4], minmax[i][5], minmax[i][4]-minmax[i][5]);
 
 		// BPM holding variables.
 		int nazh = periods[i][0];
