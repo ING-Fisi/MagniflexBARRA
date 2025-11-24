@@ -191,7 +191,7 @@ void init_param_val(param_t *par, ptyp_t pty) {
 	case COMPASS: { // Support range. Single.
 		par->type = 'i';
 		//			if ( alloc_param_val( par, 0, RNGM ) < 0 ) { // Set
-		//parameter as components parameter, nsns = 0.
+		// parameter as components parameter, nsns = 0.
 		if (alloc_param_val(par, 1, 1) < 0) {
 			ESP_LOGE(TAG, "error: %s value buffer allocation.", ptyp_str[pty]);
 		}
@@ -377,7 +377,8 @@ void print_mgnflx_regs(magniflex_reg_t *dev) {
 // Function that populate data JSON.
 void param_add2_json(param_t *par, char *pname, data_mode_t m, char *s) {
 	u32 nsns = par->val.snssize, rngs = par->val.rangesize;
-	int avgindx = rngs <= 1 ? 0 : 1; // Get index of the average elements. [min, avg, max]
+	int avgindx =
+		rngs <= 1 ? 0 : 1; // Get index of the average elements. [min, avg, max]
 	jsn_add_key(s, pname);
 	switch (par->type) {
 	case 'f': {
@@ -448,7 +449,8 @@ void param_chck_pub(magniflex_reg_t *dev, char *js_str) {
 	if (true) {
 		for (int i = 0; i < NPARAM; i++) {
 			if (dev->data_req[i] == 1) {
-				param_add2_json(&(dev->params[i]), (char *)ptyp_str[i],dev->data_mode, js_str);
+				param_add2_json(&(dev->params[i]), (char *)ptyp_str[i],
+								dev->data_mode, js_str);
 			}
 		}
 		int slen = strlen(js_str);
@@ -472,7 +474,8 @@ int chck_req_periodic_pub(magniflex_reg_t *dev, char *pub_js, char *data_js) {
 	if (strlen(data_js) == 0) { // No data available.
 		ESP_LOGI(TAG, "No data available");
 	} else {
-		ESP_LOGI(TAG, "data_js (%d):%s  [%d]\n", strlen(data_js), data_js,curdev.presence);
+		ESP_LOGI(TAG, "data_js (%d):%s  [%d]\n", strlen(data_js), data_js,
+				 curdev.presence);
 		pub_js[0] = 0;
 		data_js[0] = 0;
 	}
@@ -499,7 +502,7 @@ void dbg_sim_data(magniflex_reg_t *dev) {
 	//	}
 	dev->params[COMPASS].val.ibuf[0] = (u32)(0 + rand_int_decimal(360, 0));
 	//	dev->params[SLEEP_T].val.ibuf[0] = (u32) (0 + rand_int_decimal( 3600*12,
-	//0 ));
+	// 0 ));
 	for (int i = 0; i < RNGM; i++) {
 		dev->params[BREATH_R].val.fbuf[i] = (12.00f + rand_int_decimal(1, 2));
 	}
@@ -719,55 +722,43 @@ void ctrl_tsk(void *vargs) {
 	if (curdev.cnt_nsns < 2) {
 		ESP_LOGW(TAG, "no snsmems detected, try enumaration.");
 	} else {
-		ESP_LOGI("snsmems_acq_tsk", "detected: %d SNSMEMS", curdev.cnt_nsns);
-		for (int i = 0; i < curdev.cnt_nsns; i++) {
-			ESP_LOGI(TAG, "sns_addr[%d]: %02x(%d)", i, curdev.snsmems[i].indx,
-					 curdev.snsmems[i].indx);
+
+		period_buf_init();
+
+		while (1) {
+
+			// float t = 0.0f, h = 0.0f;
+			// MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_TEMPERATURE, &t);
+			// MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_HUMIDITY, &h);
+
+			// ESP_LOGI(TAG, "Run working tasks. [%f] [%f]", t, h);
+			// acq_snsmems_data(&curdev);
+
+			if (acq_snsmems_data(&curdev) < 0) {
+				//ESP_LOGW(TAG, "retry initialize sensors.");
+				snsmems_en_cmd(0);
+				//vTaskDelay(500 / portTICK_PERIOD_MS);
+				curdev.cnt_nsns = snsmems_initilaize(curdev.snsmems);
+//				if (curdev.cnt_nsns > 0) {
+//					ESP_LOGI("snsmems_acq_tsk", "detected: %d SNSMEMS",
+//							 curdev.cnt_nsns);
+//					for (int i = 0; i < curdev.cnt_nsns; i++) {
+//						ESP_LOGI(TAG, "sns_addr[%d]: %02x(%d)", i,
+//								 curdev.snsmems[i].indx,
+//								 curdev.snsmems[i].indx);
+//					}
+//				}
+			}
+
+			// memset(js, 0, sizeof(js));
+			// memset(pjsdata, 0, sizeof(pjsdata));
+			// chck_req_periodic_pub(&curdev, js, pjsdata);
+
+			gpio_set_level(GPIO_OUTPUT_IO_0, 100);
+			vTaskDelay(20 / portTICK_PERIOD_MS);
+			gpio_set_level(GPIO_OUTPUT_IO_0, 0);
+			vTaskDelay(20 / portTICK_PERIOD_MS);
 		}
-
-		// Get saved threshold values.
-		snsmems_nvs_get_thrsh(curdev.prsnc_trsh);
-
-		ESP_LOGI("snsmems_nvs_get_thrsh", "prsnc_trsh: %f %f %f",
-				 curdev.prsnc_trsh[0], curdev.prsnc_trsh[1],
-				 curdev.prsnc_trsh[2]);
-		connected_sns = true;
-
-		xTaskCreatePinnedToCore(env_tsk, "env_tsk", 1024 * 5, NULL, 4, NULL,
-								1 /*tskNO_AFFINITY*/);
-	}
-
-#ifdef USE_PERIOD_CIRCBUF
-	period_buf_init();
-#endif
-
-	while (1) {
-
-		float t = 0.0f, h = 0.0f;
-		// Acquire environment parameters.
-		MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_TEMPERATURE, &t);
-		MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_HUMIDITY, &h);
-
-		ESP_LOGI(TAG, "Run working tasks. [%f] [%f]",t,h);
-
-		if (curdev.cnt_nsns < 2) {
-			ESP_LOGW(TAG, "no snsmems detected, try enumaration.");
-		} else {
-			acq_snsmems_data(&curdev);
-		}
-
-		curdev.params[HUM].val.fbuf[1] = h;
-		curdev.params[HUM_A].val.fbuf[0] = h - 5;
-		curdev.params[TEMP_A].val.fbuf[0] = curdev.params[TEMP].val.fbuf[0] - 3;
-
-		memset(js, 0, sizeof(js));
-		memset(pjsdata, 0, sizeof(pjsdata));
-		chck_req_periodic_pub(&curdev, js, pjsdata);
-
-		gpio_set_level(GPIO_OUTPUT_IO_0, 100);
-		vTaskDelay(20 / portTICK_PERIOD_MS);
-		gpio_set_level(GPIO_OUTPUT_IO_0, 0);
-		vTaskDelay(20 / portTICK_PERIOD_MS);
 	}
 
 	vTaskDelete(NULL);
@@ -883,19 +874,6 @@ void app_main(void) {
 	esp_log_level_set("XMQTT", ESP_LOG_DEBUG);
 	esp_log_level_set("XBLE", ESP_LOG_DEBUG);
 	esp_log_level_set("MAIN", ESP_LOG_DEBUG);
-	//	esp_log_level_set("XOTA", ESP_LOG_DEBUG);
-	//	esp_log_level_set("XWIFI", ESP_LOG_DEBUG);
-	//	esp_log_level_set("XSNSMEMS", ESP_LOG_DEBUG);
-	//	esp_log_level_set("XGCPJWT", ESP_LOG_DEBUG);
-	//	esp_log_level_set("X_RGBLED", ESP_LOG_DEBUG);
-	//	esp_log_level_set("MAIN", ESP_LOG_DEBUG);
-	//    esp_log_level_set("MQTT_CLIENT", ESP_LOG_VERBOSE);
-	//  esp_log_level_set("MQTT_EXAMPLE", ESP_LOG_DEBUG);
-	//  esp_log_level_set("TRANSPORT_TCP", ESP_LOG_DEBUG);
-	//    esp_log_level_set("TRANS_SSL", ESP_LOG_VERBOSE);
-	//    esp_log_level_set("TRANSPORT", ESP_LOG_VERBOSE);
-	//    esp_log_level_set("OUTBOX", ESP_LOG_VERBOSE);
-	//  esp_log_level_set("XSNTP", ESP_LOG_VERBOSE);
 
 	/* Main application initial chip and system information  *
 	 * ----------------------------------------------------- */
@@ -976,20 +954,6 @@ void app_main(void) {
 		}
 	}
 
-	//	//**********************************************************//
-	//	// strip newline
-	//	char* pos = strchr(line, '\n');
-	//	if (pos) {
-	//		*pos = '\0';
-	//	}
-	//	ESP_LOGI(TAG, "Read from file: '%s'", line);
-
-	// All done, unmount partition and disable SPIFFS
-	// esp_vfs_spiffs_unregister(conf.partition_label);
-	// ESP_LOGI(TAG, "SPIFFS unmounted");
-
-	//*****************************************************************//
-
 	//************************* GPIO INIT ********************************//
 	gpio_init();
 	//************************* SENS INIT ********************************//
@@ -1005,38 +969,8 @@ void app_main(void) {
 
 	get_mac_str(macstr);
 
-	//********************************************************//
-
-#ifdef TEST_SNSMEMS
-	// SENSMEMS Initialization and enumeration.
-	int snsnum = snsmems_initilaize(curdev.snsmems);
-	ESP_LOGI(TAG, "///////////////////// TEST SNSMEMS /////////////////////");
-	ESP_LOGI(TAG, "");
-	ESP_LOGI(TAG, "SNSMEMS detected: %d.", snsnum);
-	ESP_LOGI(TAG, "");
-	u32 buf;
-	for (int i = 0; i < snsnum; i++) {
-		ESP_LOGI(TAG, "-------------------- address: %d.", curdev.snsmems[i]);
-		if (snsmems_rd(curdev.snsmems[i], SNSMEMS_REG(Status_REG), (u8 *)&buf,
-					   REG_LEN) == ESP_OK) {
-			snsmems_print_stat(buf);
-			snsmems_print_ver(curdev.snsmems[i]);
-		}
-		ESP_LOGI(TAG, "");
-		//		ESP_LOGI(TAG,"sns_addr[%d]: %02x(%d)", i, curdev.snsmems[i],
-		//curdev.snsmems[i]);
-	}
-	//	snsmems_en_cmd(0);
-	return;
-#endif
-
 	//************************* MAGNI INIT ********************************//
 	init_magniflex_device(&curdev); // Initialize device.
-
-	// TODO: do better initialization.
-	for (int i = 0; i < NSNS * 2; i++) {
-		curdev.prsnc_trsh[i] = 0.00f;
-	}
 
 	//*************************************************************************//
 	xTaskCreatePinnedToCore(ctrl_tsk, "ctrl_tsk", 1024 * 5, NULL, 4, NULL,

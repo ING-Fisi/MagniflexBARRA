@@ -1,7 +1,6 @@
 ## IDF Component Manager Manifest File
 dependencies:
-  espressif/json_parser: "==1.0.3"
-  espressif/led_indicator: "==0.9.2"
+  espressif/esp-dsp: "==1.7.0"
   ## Required IDF version
   idf:
     version: ">=4.1.0"

@@ -229,7 +229,7 @@ int acq_snsmems_raw_data (magniflex_reg_t *dev) {
 
 	// Data acquisition variables.
 	uint8_t rtbuff[100];
-	int axis = 3, freqsamp = 208, blen = 5000;
+	int axis = 3, freqsamp = 208, blen = 50;//5000;
 	int err_cnt = 0;
 
 	// Set data acquisition counters register.
@@ -279,45 +279,45 @@ int acq_snsmems_raw_data (magniflex_reg_t *dev) {
 	}
 
 	// Wait for acquisition without I2C	transaction to avoid electrical noise.
-	int wait = (int) (blen/(freqsamp*axis) + 1);
-	ESP_LOGE(TAG,"Wait for acquisition: %d s.", wait);
-	long tmt = T_US;
-	while ( (long) (T_US - tmt) < (long) (wait * SEC) ) {
-		t_snsmems_wdt = T_US;
-		vTaskDelay(1000/portTICK_PERIOD_MS);
-	}
-	long tmt_wsns = T_US;
-	while ( 1 ) {
-		int chck = 0;
-		err_cnt = 0;
-		for ( int i = 0 ; i < dev->cnt_nsns ; i++ ) {
-			if ( i2c_master_read_slave_reg(I2C_PORT_NUM, dev->snsmems[i].indx, (8*4), rtbuff, 4) != ESP_OK ) {
-				ESP_LOGE(TAG,"error: i2c write fail. [device %d]", dev->snsmems[i].indx);
-				dev->snsmems[i].iscomm = 0;
-				err_cnt ++;
-				if ( err_cnt == dev->cnt_nsns ) {
-					ESP_LOGE(TAG,"error: no sensor reply.");
-					return -1;
-				}
-			}
-			dev->snsmems[i].iscomm = 1;
-			ESP_LOGV(TAG,"chck: %d", chck);
-			ESP_LOGV(TAG,"ret [%d]: %d %d %d %d", dev->snsmems[i].indx, rtbuff[0], rtbuff[1], rtbuff[2], rtbuff[3] );
-			if ( (rtbuff[0] & 1) == 0 ) {
-				ESP_LOGD(TAG,"[%d] done!", dev->snsmems[i].indx);
-				chck += 1;
-			}
-		}
-		if ( chck >= dev->cnt_nsns ) {
-			ESP_LOGI(TAG,"SNSMEMS acquisition completed.");
-			break;
-		}
-		if ( chck_time_int(&tmt_wsns, 5) == 1 ) {
-			ESP_LOGW(TAG,"snsmems %d data acuqisition timeout.", dev->snsmems[chck].indx);
-			break;
-		}
-		vTaskDelay(100);
-	}
+//	int wait = (int) (blen/(freqsamp*axis) + 1);
+//	ESP_LOGE(TAG,"Wait for acquisition: %d s.", wait);
+//	long tmt = T_US;
+//	while ( (long) (T_US - tmt) < (long) (wait * SEC) ) {
+//		t_snsmems_wdt = T_US;
+//		vTaskDelay(1000/portTICK_PERIOD_MS);
+//	}
+//	long tmt_wsns = T_US;
+//	while ( 1 ) {
+//		int chck = 0;
+//		err_cnt = 0;
+//		for ( int i = 0 ; i < dev->cnt_nsns ; i++ ) {
+//			if ( i2c_master_read_slave_reg(I2C_PORT_NUM, dev->snsmems[i].indx, (8*4), rtbuff, 4) != ESP_OK ) {
+//				ESP_LOGE(TAG,"error: i2c write fail. [device %d]", dev->snsmems[i].indx);
+//				dev->snsmems[i].iscomm = 0;
+//				err_cnt ++;
+//				if ( err_cnt == dev->cnt_nsns ) {
+//					ESP_LOGE(TAG,"error: no sensor reply.");
+//					return -1;
+//				}
+//			}
+//			dev->snsmems[i].iscomm = 1;
+//			ESP_LOGV(TAG,"chck: %d", chck);
+//			ESP_LOGV(TAG,"ret [%d]: %d %d %d %d", dev->snsmems[i].indx, rtbuff[0], rtbuff[1], rtbuff[2], rtbuff[3] );
+//			if ( (rtbuff[0] & 1) == 0 ) {
+//				ESP_LOGD(TAG,"[%d] done!", dev->snsmems[i].indx);
+//				chck += 1;
+//			}
+//		}
+//		if ( chck >= dev->cnt_nsns ) {
+//			ESP_LOGI(TAG,"SNSMEMS acquisition completed.");
+//			break;
+//		}
+//		if ( chck_time_int(&tmt_wsns, 5) == 1 ) {
+//			ESP_LOGW(TAG,"snsmems %d data acuqisition timeout.", dev->snsmems[chck].indx);
+//			break;
+//		}
+//		vTaskDelay(100);
+//	}
 
 #ifdef GET_RAWDATA
 	ESP_LOGI(TAG,"Get Raw SNSMEMS data.");
@@ -377,10 +377,11 @@ void acq_snsmems_env_data ( magniflex_reg_t *dev ) {
 		magx[i] = *((int32_t*)&rtbuff[9]);
 		magy[i] = *((int32_t*)&rtbuff[10]);
 		magz[i] = *((int32_t*)&rtbuff[11]);
-
+//
 //		ESP_LOGI(TAG, "[%d] angl:%.02f|acc:%d,%d,%d|temp:%.01f|hum:%.01f|mag:%d,%d,%d",
 //				dev->snsmems[i].indx, angle[i], accx[i], accy[i], accz[i], temp[i], hum[i],
 //				magx[i], magy[i], magz[i] );
+				
 
 		// Assign BODY_P parameter for each current SNSMEMS.
 		// ------------------------------------------------.
@@ -451,67 +452,85 @@ void acq_snsmems_env_data ( magniflex_reg_t *dev ) {
 		}
 
 	}
+	
+	
+	
+//		ESP_LOGI(TAG,"angl1:%.02f|angl2:%.02f|angl3:%.02f		accx1:%d|accx2:%d|accx3:%d		accy1:%d|accy2:%d|accy3:%d		accz1:%d|accz2:%d|accz3:%d",
+//		angle[0],angle[1],angle[2],
+//		accx[0],accx[1],accx[2],
+//		accy[0],accy[1],accy[2],
+//		accz[0],accz[1],accz[2]);
+
+
+
+//		printf("%d:%d:%d	%d:%d:%d	%d:%d:%d\r\n",
+//		accx[0],accy[0],accz[0],
+//		accx[1],accy[1],accz[1],
+//		accx[2],accy[2],accz[2]);
+		
+		printf("$%d %d %d %d %d %d %d %d %d;", accx[0],accy[0],accz[0], accx[1],accy[1],accz[1], accx[2],accy[2],accz[2]);
+
 
 	dev->params[TEMP].val.fbuf[0] = tmp_temp;
 	//ESP_LOGW(TAG,"temp: %.2f", dev->params[TEMP].val.fbuf[0]);
 	// Count replying sensors.
-	int rply_sns_cnt = 0;
-	for (int l = 0; l < dev->cnt_nsns; l++) {
-		if ((dev->snsmems[l].iscomm == 1)) {
-			rply_sns_cnt++;
-		}
-	}
+//	int rply_sns_cnt = 0;
+//	for (int l = 0; l < dev->cnt_nsns; l++) {
+//		if ((dev->snsmems[l].iscomm == 1)) {
+//			rply_sns_cnt++;
+//		}
+//	}
 
-	// Check for Presence.
-	if ( (dev->presence == 0) ) {
-		for (int e = 0; e < dev->cnt_nsns ; e++ ) {
-			if ( (dev->snsmems[e].iscomm = 1) && ((angle[e] <= dev->prsnc_trsh[e*2]) || (angle[e] >= dev->prsnc_trsh[e*2+1])) ) {
-				ESP_LOGW(TAG,"Presence for threshold --------------------------------> %d  [%.02f] [%.02f] [%.02f]", e,angle[e],dev->prsnc_trsh[e*2],dev->prsnc_trsh[e*2+1]);
-				dev->presence = 1;
-				//rgbled_set_c_presence(0x050000, dev->presence);
-				init_cirf(&bpm_filt);
-				if ( dev->start_sleep_t == 0 ) {
-					dev->start_sleep_t = get_curtimestamp(); // Get time sleep start.
-					ESP_LOGW(TAG,"Presence detected, get time.");
-#ifdef USE_PERIOD_CIRCBUF
-					// Reset periods buffers.
-					period_buf_init();
-#endif
-				}
-				break;
-			}
-		}
+//	// Check for Presence.
+//	if ( (dev->presence == 0) ) {
+//		for (int e = 0; e < dev->cnt_nsns ; e++ ) {
+//			if ( (dev->snsmems[e].iscomm = 1) && ((angle[e] <= dev->prsnc_trsh[e*2]) || (angle[e] >= dev->prsnc_trsh[e*2+1])) ) {
+//				ESP_LOGW(TAG,"Presence for threshold --------------------------------> %d  [%.02f] [%.02f] [%.02f]", e,angle[e],dev->prsnc_trsh[e*2],dev->prsnc_trsh[e*2+1]);
+//				dev->presence = 1;
+//				//rgbled_set_c_presence(0x050000, dev->presence);
+//				init_cirf(&bpm_filt);
+//				if ( dev->start_sleep_t == 0 ) {
+//					dev->start_sleep_t = get_curtimestamp(); // Get time sleep start.
+//					ESP_LOGW(TAG,"Presence detected, get time.");
+//#ifdef USE_PERIOD_CIRCBUF
+//					// Reset periods buffers.
+//					period_buf_init();
+//#endif
+//				}
+//				break;
+//			}
+//		}
+//
+//		dev->params[HEART_R].val.fbuf[1] = 0;
+//		dev->params[BREATH_R].val.fbuf[1] = 0;
+//	}
+//	else if ( dev->presence == 1 ) {
+//		int chck = 0;
+//		for (int e = 0; e < dev->cnt_nsns ; e++ ) {
+//			//ESP_LOGW(TAG,"angle[%d]: %.2f", e, angle[e]);
+//			if ( (dev->snsmems[e].iscomm = 1) && (angle[e] > dev->prsnc_trsh[e*2]) && (angle[e] < dev->prsnc_trsh[e*2+1]) ) {
+//				//ESP_LOGW(TAG,"Threshold[%d]: %.2f, %.2f, %.2f.", e, angle[e], dev->prsnc_trsh[e*2], dev->prsnc_trsh[e*2+1]);
+//				chck++;
+//			}else{
+//				//ESP_LOGE(TAG,"Threshold[%d]: %.2f, %.2f, %.2f.", e, angle[e], dev->prsnc_trsh[e*2], dev->prsnc_trsh[e*2+1]);
+//			}
+//		}
+//		if (chck == rply_sns_cnt) {
+//			ESP_LOGW(TAG, "no_press_cnt: %d", no_presence_cnt);
+//			if ( no_presence_cnt++ > NCHECK_PRES ) {
+//				no_presence_cnt = 0;
+//				dev->presence = 0;
+//				//rgbled_set_c_presence(0x050000, dev->presence);
+//				dev->start_sleep_t = 0; // Reset sleep timer.
+//				ESP_LOGW(TAG,"Presence not detected, reset time.");
+//			}
+//		}
+//	}
 
-		dev->params[HEART_R].val.fbuf[1] = 0;
-		dev->params[BREATH_R].val.fbuf[1] = 0;
-	}
-	else if ( dev->presence == 1 ) {
-		int chck = 0;
-		for (int e = 0; e < dev->cnt_nsns ; e++ ) {
-			//ESP_LOGW(TAG,"angle[%d]: %.2f", e, angle[e]);
-			if ( (dev->snsmems[e].iscomm = 1) && (angle[e] > dev->prsnc_trsh[e*2]) && (angle[e] < dev->prsnc_trsh[e*2+1]) ) {
-				//ESP_LOGW(TAG,"Threshold[%d]: %.2f, %.2f, %.2f.", e, angle[e], dev->prsnc_trsh[e*2], dev->prsnc_trsh[e*2+1]);
-				chck++;
-			}else{
-				//ESP_LOGE(TAG,"Threshold[%d]: %.2f, %.2f, %.2f.", e, angle[e], dev->prsnc_trsh[e*2], dev->prsnc_trsh[e*2+1]);
-			}
-		}
-		if (chck == rply_sns_cnt) {
-			ESP_LOGW(TAG, "no_press_cnt: %d", no_presence_cnt);
-			if ( no_presence_cnt++ > NCHECK_PRES ) {
-				no_presence_cnt = 0;
-				dev->presence = 0;
-				//rgbled_set_c_presence(0x050000, dev->presence);
-				dev->start_sleep_t = 0; // Reset sleep timer.
-				ESP_LOGW(TAG,"Presence not detected, reset time.");
-			}
-		}
-	}
 
-
-	memset(js_speed,0,sizeof(js_speed));
-	memset(pjsdata_speed,0,sizeof(pjsdata_speed));
-	chck_req_periodic_pub(dev, js_speed, pjsdata_speed);
+//	memset(js_speed,0,sizeof(js_speed));
+//	memset(pjsdata_speed,0,sizeof(pjsdata_speed));
+//	chck_req_periodic_pub(dev, js_speed, pjsdata_speed);
 
 
 }
@@ -742,215 +761,215 @@ int acq_snsmems_data( magniflex_reg_t *dev ) {
 
 	acq_snsmems_env_data(dev);
 
-	// 4. READ READS PERIODS NUMBER
-	// ------------------------------------------------------------------
-	// Periods.
-	uint8_t raw_periods[dev->cnt_nsns][12];
-	memset( raw_periods, 0, sizeof(raw_periods));
-	uint16_t *periods[dev->cnt_nsns]; // Pointers to data.
-	for ( int i = 0 ; i < dev->cnt_nsns ; i++ ) {
-		if ( i2c_master_read_slave_reg(I2C_PORT_NUM, dev->snsmems[i].indx, OFFS_AZ_CNT*4, &raw_periods[i][0] , 4*3) != ESP_OK ) {
-			ESP_LOGE(TAG,"error: i2c read fail. [device %d]", dev->snsmems[i].indx);
-			dev->snsmems[i].iscomm = 0;
-		}
-		dev->snsmems[i].iscomm = 1;
-		periods[i] = (uint16_t*) &raw_periods[i][0]; // Point data.
-	}
-	// Min/Max.
-	uint8_t raw_minmax[dev->cnt_nsns][24];
-	memset( raw_minmax, 0, sizeof(raw_minmax));
-	int32_t *minmax[dev->cnt_nsns];
-	for ( int i = 0 ; i < dev->cnt_nsns ; i++ ) {
-		if ( i2c_master_read_slave_reg(I2C_PORT_NUM, dev->snsmems[i].indx, OFFS_AZ_MAX*4, (uint8_t*) raw_minmax[i], 4*6) != ESP_OK ) {
-			ESP_LOGE(TAG,"error: i2c read fail. [device %d]", dev->snsmems[i].indx);
-			dev->snsmems[i].iscomm = 0;
-		}
-		dev->snsmems[i].iscomm = 1;
-		minmax[i] = (int32_t*) &raw_minmax[i][0];
-	}
-
-	// 4. GET DATA FOR EACH PERIODS
-	// ------------------------------------------------------------------
-	// Repeat for each sensor.
-	for ( int i = 0 ; i < dev->cnt_nsns ; i++ ) {
-
-		if (dev->snsmems[i].iscomm == 0) {
-			ESP_LOGW(TAG,"SNSMEMS %d didn't replayed, goes to next iteration.", dev->snsmems[i].indx);
-			continue;
-		}
-
-		// BPM holding variables.
-		int nazh = periods[i][0];
-		int nazl = periods[i][1];
-		int ngxh = periods[i][2];
-		int ngxl = periods[i][3];
-		int ngyh = periods[i][4];
-		int ngyl = periods[i][5];
-		uint16_t azh[33];
-		uint16_t azl[33];
-		uint16_t gxh[33];
-		uint16_t gxl[33];
-		uint16_t gyh[33];
-		uint16_t gyl[33];
-
-		// Get raw BPM data from registers.
-		nazh = get_periods_data(dev, i, azh, nazh, PERIODS_AZ_HIGH_ADDR, "azh");
-		nazl = get_periods_data(dev, i, azl, nazl, PERIODS_AZ_LOW_ADDR, "azl");
-		ngxh = get_periods_data(dev, i, gxh, ngxh, PERIODS_GX_HIGH_ADDR, "gxh");
-		ngxl = get_periods_data(dev, i, gxl, ngxl, PERIODS_GX_LOW_ADDR, "gxl");
-		ngyh = get_periods_data(dev, i, gyh, ngyh, PERIODS_GY_HIGH_ADDR, "gyh");
-		ngyl = get_periods_data(dev, i, gyl, ngyl, PERIODS_GY_LOW_ADDR, "gyl");
-
-		if(	(dev->presence == 0) ||
-				(
-						(minmax[i][0]-minmax[i][1]) > 500
-						//					||
-						//					(minmax[i][0]-minmax[i][1]) < 4
-						||
-						(minmax[i][2]-minmax[i][3])  > 5000
-						||
-						//					(minmax[i][2]-minmax[i][3])  < 600
-						//					||
-						(minmax[i][4]-minmax[i][5])  > 5000
-						//					||
-						//					(minmax[i][4]-minmax[i][5])  < 600
-				)
-		) {
-			//			ESP_LOGW(TAG,"No Heart Rate detected device %d", dev->snsmems[i]);
-			// If last device and the previous didn't assigned best_bpm, return and don't assign new values.
-			if ( i == (dev->cnt_nsns - 1) && (best_bpm.avg == 0.0f) ) {
-				return 0;
-			}
-			continue; // Go to next iteration.
-		}
-
-#ifdef USE_PERIOD_CIRCBUF
-		// Get BPM statistics.
-		// TODO: get statistics from circular periods buffer.
-		ESP_LOGD(TAG,"circ_azh %d -> n: %d, idx: %d", i, azh_n[i], azh_in[i]);
-		ESP_LOGD(TAG,"circ_azl %d -> n: %d, idx: %d", i, azl_n[i], azl_in[i]);
-		ESP_LOGD(TAG,"circ_gxh %d -> n: %d, idx: %d", i, gxh_n[i], gxh_in[i]);
-		ESP_LOGD(TAG,"circ_gxl %d -> n: %d, idx: %d", i, gxl_n[i], gxl_in[i]);
-		ESP_LOGD(TAG,"circ_gyh %d -> n: %d, idx: %d", i, gyh_n[i], gyh_in[i]);
-		ESP_LOGD(TAG,"circ_gyl %d -> n: %d, idx: %d", i, gyl_n[i], gyl_in[i]);
-
-		// Fill circular buffers.
-		for ( int k = 0 ; k < nazh ; k++ ) {
-			period_buf_push(circ_azh[i], &azh_in[i], &azh_n[i], azh[k]);
-		}
-		for ( int k = 0 ; k < nazl ; k++ ) {
-			period_buf_push(circ_azl[i], &azl_in[i], &azl_n[i], azl[k]);
-		}
-		for ( int k = 0 ; k < ngxh ; k++ ) {
-			period_buf_push(circ_gxh[i], &gxh_in[i], &gxh_n[i], gxh[k]);
-		}
-		for ( int k = 0 ; k < ngxl ; k++ ) {
-			period_buf_push(circ_gxl[i], &gxl_in[i], &gxl_n[i], gxl[k]);
-		}
-		for ( int k = 0 ; k < ngyh ; k++ ) {
-			period_buf_push(circ_gyh[i], &gyh_in[i], &gyh_n[i], gyh[k]);
-		}
-		for ( int k = 0 ; k < ngyl ; k++ ) {
-			period_buf_push(circ_gyl[i], &gyl_in[i], &gyl_n[i], gyl[k]);
-		}
-
-		ESP_LOGD(TAG,"Log circ_azh buffer.");
-		for ( int a = 0 ; a < azh_n[i] ; a++ ) {
-			ESP_LOGD(TAG,"%d", circ_azh[i][a]);
-		}
-
-		// Calculate statistics on circular buffer stored periods.
-		get_bpm_stats( &bpm[i][0], circ_azh[i], azh_n[i]);
-		get_bpm_stats( &bpm[i][1], circ_azl[i], azl_n[i]);
-		get_bpm_stats( &bpm[i][2], circ_gxh[i], gxh_n[i]);
-		get_bpm_stats( &bpm[i][3], circ_gxl[i], gxl_n[i]);
-		get_bpm_stats( &bpm[i][4], circ_gyh[i], gyh_n[i]);
-		get_bpm_stats( &bpm[i][5], circ_gyl[i], gyl_n[i]);
-#else
-		get_bpm_stats( &bpm[i][0], azh, nazh);
-		get_bpm_stats( &bpm[i][1], azl, nazl);
-		get_bpm_stats( &bpm[i][2], gxh, ngxh);
-		get_bpm_stats( &bpm[i][3], gxl, ngxl);
-		get_bpm_stats( &bpm[i][4], gyh, ngyh);
-		get_bpm_stats( &bpm[i][5], gyl, ngyl);
-#endif
-
-		//print_bpm_vectors( bpm[i] );
-		// Find Best BPM values among devices.
-		// FIXME -> this function evaluate also 0 value from empty buffer.
-		bpm_data_t tmpbpm = sel_best_bpm( bpm[i] );
-		//		if ( (tmpbpm.k1 != 0) && tmpbpm.k1 < best_bpm.k1 ) {
-		//			memcpy(&best_bpm,&tmpbpm,sizeof(bpm_data_t));
-		//			best_bpm_dev = dev->snsmems[i];
-		//		}
-
-		if ( 	(tmpbpm.k1 != 0) &&
-				(tmpbpm.avg + tmpbpm.min)/2 < (best_bpm.avg + best_bpm.min)/2) {
-			memcpy(&best_bpm, &tmpbpm, sizeof(bpm_data_t));
-			best_bpm_dev = dev->snsmems[i].indx;
-		}
-	}
-
-	if ( (best_bpm.avg + best_bpm.min)/2 >= 200 ) {
-		return 0;
-	}
-
-	//	ESP_LOGW(TAG,"//// Best BPM ////\n"
-	//			"\t\tdev:\t|%d\t|\n"
-	//			"\t\tmax:\t|%.02f\t|\n"
-	//			"\t\tavg:\t|%.02f\t|\n"
-	//			"\t\tmin:\t|%.02f\t|\n"
-	//			"\t\tk1:\t|%.02f\t|\n"
-	//			"\t\tk2:\t|%.02f\t|\n"
-	//			"\t\tR:\t|%.02f\t|\n"
-	//			"\t\tdif:\t|%.02f\t|\n",
-	//			best_bpm_dev, best_bpm.max, best_bpm.avg, best_bpm.min, best_bpm.k1, best_bpm.k2, best_bpm.ratio, fabsf(best_bpm.k1-best_bpm.k2) );
-
-	// Assign HEART parameter for each SNSMEMS.
-	// ----------------------------------------
-	//	if (  best_bpm.avg < dev->params[HEART_R].val.fbuf[0] ) { // Check for MIN
-	////		ESP_LOGD(TAG,"Position value MIN found.");
-	//		dev->params[HEART_R].val.fbuf[0] = best_bpm.avg;
-	//	}
-	//	if ( best_bpm.avg > dev->params[HEART_R].val.fbuf[2] ) { // Check for MAX.
-	////		ESP_LOGD(TAG,"Position value MAX found.");
-	//		dev->params[HEART_R].val.fbuf[2] = best_bpm.avg;
-	//	}
-	dev->params[HEART_R].val.fbuf[0] = best_bpm.min;
-#ifdef CIRC_LPF
-	push_circf_val(&bpm_filt, (best_bpm.avg+best_bpm.min)/2);
-	//	push_circf_val(&bpm_filt, (best_bpm.avg+best_bpm.min-best_bpm.k1*best_bpm.min)/2);
-	dev->params[HEART_R].val.fbuf[1] = get_circf_val(&bpm_filt);
-#else
-	dev->params[HEART_R].val.fbuf[1] = (best_bpm.avg+best_bpm.min)/2; // Assign AVG+MIN/2.
-#endif
-	//	dev->params[HEART_R].val.fbuf[1] = best_bpm.avg; // Assign AVG.
-	dev->params[HEART_R].val.fbuf[2] = best_bpm.max;
-
-	// Assign BREATH_R parameter for each SNSMEMS.
-	// -------------------------------------------
-	// TODO: For now get from breath division with randomized denominator [5 : 7].
-	if ( (best_bpm.avg/(5+rand_int_decimal(2,1))) < dev->params[BREATH_R].val.fbuf[0] ) { // Check for MIN
-		ESP_LOGD(TAG,"Position value MIN found.");
-		dev->params[BREATH_R].val.fbuf[0] = (best_bpm.avg/(5+rand_int_decimal(2,1)));
-	}
-	if ( (best_bpm.avg/(5+rand_int_decimal(2,1))) > dev->params[BREATH_R].val.fbuf[2] ) { // Check for MAX.
-		ESP_LOGD(TAG,"Position value MAX found.");
-		dev->params[BREATH_R].val.fbuf[2] = (best_bpm.avg/(5+rand_int_decimal(2,1)));
-	}
-	dev->params[BREATH_R].val.fbuf[1] = (best_bpm.avg/(5+rand_int_decimal(2,1))); // Assign AVG.
-
-	// Assign GOOD_K parameter for each current SNSMEMS.
-	// -------------------------------------------------
-	if (  best_bpm.k1 < dev->params[GOOD_K].val.fbuf[0] ) { // Check for MIN
-		ESP_LOGD(TAG,"Position value MIN found.");
-		dev->params[GOOD_K].val.fbuf[0] = best_bpm.k1;
-	}
-	if ( best_bpm.k1 > dev->params[GOOD_K].val.fbuf[2] ) { // Check for MAX.
-		ESP_LOGD(TAG,"Position value MAX found.");
-		dev->params[GOOD_K].val.fbuf[2] = best_bpm.k1;
-	}
-	dev->params[GOOD_K].val.fbuf[1] = best_bpm.k1; // Assign AVG.
+//	// 4. READ READS PERIODS NUMBER
+//	// ------------------------------------------------------------------
+//	// Periods.
+//	uint8_t raw_periods[dev->cnt_nsns][12];
+//	memset( raw_periods, 0, sizeof(raw_periods));
+//	uint16_t *periods[dev->cnt_nsns]; // Pointers to data.
+//	for ( int i = 0 ; i < dev->cnt_nsns ; i++ ) {
+//		if ( i2c_master_read_slave_reg(I2C_PORT_NUM, dev->snsmems[i].indx, OFFS_AZ_CNT*4, &raw_periods[i][0] , 4*3) != ESP_OK ) {
+//			ESP_LOGE(TAG,"error: i2c read fail. [device %d]", dev->snsmems[i].indx);
+//			dev->snsmems[i].iscomm = 0;
+//		}
+//		dev->snsmems[i].iscomm = 1;
+//		periods[i] = (uint16_t*) &raw_periods[i][0]; // Point data.
+//	}
+//	// Min/Max.
+//	uint8_t raw_minmax[dev->cnt_nsns][24];
+//	memset( raw_minmax, 0, sizeof(raw_minmax));
+//	int32_t *minmax[dev->cnt_nsns];
+//	for ( int i = 0 ; i < dev->cnt_nsns ; i++ ) {
+//		if ( i2c_master_read_slave_reg(I2C_PORT_NUM, dev->snsmems[i].indx, OFFS_AZ_MAX*4, (uint8_t*) raw_minmax[i], 4*6) != ESP_OK ) {
+//			ESP_LOGE(TAG,"error: i2c read fail. [device %d]", dev->snsmems[i].indx);
+//			dev->snsmems[i].iscomm = 0;
+//		}
+//		dev->snsmems[i].iscomm = 1;
+//		minmax[i] = (int32_t*) &raw_minmax[i][0];
+//	}
+//
+//	// 4. GET DATA FOR EACH PERIODS
+//	// ------------------------------------------------------------------
+//	// Repeat for each sensor.
+//	for ( int i = 0 ; i < dev->cnt_nsns ; i++ ) {
+//
+//		if (dev->snsmems[i].iscomm == 0) {
+//			ESP_LOGW(TAG,"SNSMEMS %d didn't replayed, goes to next iteration.", dev->snsmems[i].indx);
+//			continue;
+//		}
+//
+//		// BPM holding variables.
+//		int nazh = periods[i][0];
+//		int nazl = periods[i][1];
+//		int ngxh = periods[i][2];
+//		int ngxl = periods[i][3];
+//		int ngyh = periods[i][4];
+//		int ngyl = periods[i][5];
+//		uint16_t azh[33];
+//		uint16_t azl[33];
+//		uint16_t gxh[33];
+//		uint16_t gxl[33];
+//		uint16_t gyh[33];
+//		uint16_t gyl[33];
+//
+//		// Get raw BPM data from registers.
+//		nazh = get_periods_data(dev, i, azh, nazh, PERIODS_AZ_HIGH_ADDR, "azh");
+//		nazl = get_periods_data(dev, i, azl, nazl, PERIODS_AZ_LOW_ADDR, "azl");
+//		ngxh = get_periods_data(dev, i, gxh, ngxh, PERIODS_GX_HIGH_ADDR, "gxh");
+//		ngxl = get_periods_data(dev, i, gxl, ngxl, PERIODS_GX_LOW_ADDR, "gxl");
+//		ngyh = get_periods_data(dev, i, gyh, ngyh, PERIODS_GY_HIGH_ADDR, "gyh");
+//		ngyl = get_periods_data(dev, i, gyl, ngyl, PERIODS_GY_LOW_ADDR, "gyl");
+//
+//		if(	(dev->presence == 0) ||
+//				(
+//						(minmax[i][0]-minmax[i][1]) > 500
+//						//					||
+//						//					(minmax[i][0]-minmax[i][1]) < 4
+//						||
+//						(minmax[i][2]-minmax[i][3])  > 5000
+//						||
+//						//					(minmax[i][2]-minmax[i][3])  < 600
+//						//					||
+//						(minmax[i][4]-minmax[i][5])  > 5000
+//						//					||
+//						//					(minmax[i][4]-minmax[i][5])  < 600
+//				)
+//		) {
+//			//			ESP_LOGW(TAG,"No Heart Rate detected device %d", dev->snsmems[i]);
+//			// If last device and the previous didn't assigned best_bpm, return and don't assign new values.
+//			if ( i == (dev->cnt_nsns - 1) && (best_bpm.avg == 0.0f) ) {
+//				return 0;
+//			}
+//			continue; // Go to next iteration.
+//		}
+//
+//#ifdef USE_PERIOD_CIRCBUF
+//		// Get BPM statistics.
+//		// TODO: get statistics from circular periods buffer.
+//		ESP_LOGD(TAG,"circ_azh %d -> n: %d, idx: %d", i, azh_n[i], azh_in[i]);
+//		ESP_LOGD(TAG,"circ_azl %d -> n: %d, idx: %d", i, azl_n[i], azl_in[i]);
+//		ESP_LOGD(TAG,"circ_gxh %d -> n: %d, idx: %d", i, gxh_n[i], gxh_in[i]);
+//		ESP_LOGD(TAG,"circ_gxl %d -> n: %d, idx: %d", i, gxl_n[i], gxl_in[i]);
+//		ESP_LOGD(TAG,"circ_gyh %d -> n: %d, idx: %d", i, gyh_n[i], gyh_in[i]);
+//		ESP_LOGD(TAG,"circ_gyl %d -> n: %d, idx: %d", i, gyl_n[i], gyl_in[i]);
+//
+//		// Fill circular buffers.
+//		for ( int k = 0 ; k < nazh ; k++ ) {
+//			period_buf_push(circ_azh[i], &azh_in[i], &azh_n[i], azh[k]);
+//		}
+//		for ( int k = 0 ; k < nazl ; k++ ) {
+//			period_buf_push(circ_azl[i], &azl_in[i], &azl_n[i], azl[k]);
+//		}
+//		for ( int k = 0 ; k < ngxh ; k++ ) {
+//			period_buf_push(circ_gxh[i], &gxh_in[i], &gxh_n[i], gxh[k]);
+//		}
+//		for ( int k = 0 ; k < ngxl ; k++ ) {
+//			period_buf_push(circ_gxl[i], &gxl_in[i], &gxl_n[i], gxl[k]);
+//		}
+//		for ( int k = 0 ; k < ngyh ; k++ ) {
+//			period_buf_push(circ_gyh[i], &gyh_in[i], &gyh_n[i], gyh[k]);
+//		}
+//		for ( int k = 0 ; k < ngyl ; k++ ) {
+//			period_buf_push(circ_gyl[i], &gyl_in[i], &gyl_n[i], gyl[k]);
+//		}
+//
+//		ESP_LOGD(TAG,"Log circ_azh buffer.");
+//		for ( int a = 0 ; a < azh_n[i] ; a++ ) {
+//			ESP_LOGD(TAG,"%d", circ_azh[i][a]);
+//		}
+//
+//		// Calculate statistics on circular buffer stored periods.
+//		get_bpm_stats( &bpm[i][0], circ_azh[i], azh_n[i]);
+//		get_bpm_stats( &bpm[i][1], circ_azl[i], azl_n[i]);
+//		get_bpm_stats( &bpm[i][2], circ_gxh[i], gxh_n[i]);
+//		get_bpm_stats( &bpm[i][3], circ_gxl[i], gxl_n[i]);
+//		get_bpm_stats( &bpm[i][4], circ_gyh[i], gyh_n[i]);
+//		get_bpm_stats( &bpm[i][5], circ_gyl[i], gyl_n[i]);
+//#else
+//		get_bpm_stats( &bpm[i][0], azh, nazh);
+//		get_bpm_stats( &bpm[i][1], azl, nazl);
+//		get_bpm_stats( &bpm[i][2], gxh, ngxh);
+//		get_bpm_stats( &bpm[i][3], gxl, ngxl);
+//		get_bpm_stats( &bpm[i][4], gyh, ngyh);
+//		get_bpm_stats( &bpm[i][5], gyl, ngyl);
+//#endif
+//
+//		//print_bpm_vectors( bpm[i] );
+//		// Find Best BPM values among devices.
+//		// FIXME -> this function evaluate also 0 value from empty buffer.
+//		bpm_data_t tmpbpm = sel_best_bpm( bpm[i] );
+//		//		if ( (tmpbpm.k1 != 0) && tmpbpm.k1 < best_bpm.k1 ) {
+//		//			memcpy(&best_bpm,&tmpbpm,sizeof(bpm_data_t));
+//		//			best_bpm_dev = dev->snsmems[i];
+//		//		}
+//
+//		if ( 	(tmpbpm.k1 != 0) &&
+//				(tmpbpm.avg + tmpbpm.min)/2 < (best_bpm.avg + best_bpm.min)/2) {
+//			memcpy(&best_bpm, &tmpbpm, sizeof(bpm_data_t));
+//			best_bpm_dev = dev->snsmems[i].indx;
+//		}
+//	}
+//
+//	if ( (best_bpm.avg + best_bpm.min)/2 >= 200 ) {
+//		return 0;
+//	}
+//
+//	//	ESP_LOGW(TAG,"//// Best BPM ////\n"
+//	//			"\t\tdev:\t|%d\t|\n"
+//	//			"\t\tmax:\t|%.02f\t|\n"
+//	//			"\t\tavg:\t|%.02f\t|\n"
+//	//			"\t\tmin:\t|%.02f\t|\n"
+//	//			"\t\tk1:\t|%.02f\t|\n"
+//	//			"\t\tk2:\t|%.02f\t|\n"
+//	//			"\t\tR:\t|%.02f\t|\n"
+//	//			"\t\tdif:\t|%.02f\t|\n",
+//	//			best_bpm_dev, best_bpm.max, best_bpm.avg, best_bpm.min, best_bpm.k1, best_bpm.k2, best_bpm.ratio, fabsf(best_bpm.k1-best_bpm.k2) );
+//
+//	// Assign HEART parameter for each SNSMEMS.
+//	// ----------------------------------------
+//	//	if (  best_bpm.avg < dev->params[HEART_R].val.fbuf[0] ) { // Check for MIN
+//	////		ESP_LOGD(TAG,"Position value MIN found.");
+//	//		dev->params[HEART_R].val.fbuf[0] = best_bpm.avg;
+//	//	}
+//	//	if ( best_bpm.avg > dev->params[HEART_R].val.fbuf[2] ) { // Check for MAX.
+//	////		ESP_LOGD(TAG,"Position value MAX found.");
+//	//		dev->params[HEART_R].val.fbuf[2] = best_bpm.avg;
+//	//	}
+//	dev->params[HEART_R].val.fbuf[0] = best_bpm.min;
+//#ifdef CIRC_LPF
+//	push_circf_val(&bpm_filt, (best_bpm.avg+best_bpm.min)/2);
+//	//	push_circf_val(&bpm_filt, (best_bpm.avg+best_bpm.min-best_bpm.k1*best_bpm.min)/2);
+//	dev->params[HEART_R].val.fbuf[1] = get_circf_val(&bpm_filt);
+//#else
+//	dev->params[HEART_R].val.fbuf[1] = (best_bpm.avg+best_bpm.min)/2; // Assign AVG+MIN/2.
+//#endif
+//	//	dev->params[HEART_R].val.fbuf[1] = best_bpm.avg; // Assign AVG.
+//	dev->params[HEART_R].val.fbuf[2] = best_bpm.max;
+//
+//	// Assign BREATH_R parameter for each SNSMEMS.
+//	// -------------------------------------------
+//	// TODO: For now get from breath division with randomized denominator [5 : 7].
+//	if ( (best_bpm.avg/(5+rand_int_decimal(2,1))) < dev->params[BREATH_R].val.fbuf[0] ) { // Check for MIN
+//		ESP_LOGD(TAG,"Position value MIN found.");
+//		dev->params[BREATH_R].val.fbuf[0] = (best_bpm.avg/(5+rand_int_decimal(2,1)));
+//	}
+//	if ( (best_bpm.avg/(5+rand_int_decimal(2,1))) > dev->params[BREATH_R].val.fbuf[2] ) { // Check for MAX.
+//		ESP_LOGD(TAG,"Position value MAX found.");
+//		dev->params[BREATH_R].val.fbuf[2] = (best_bpm.avg/(5+rand_int_decimal(2,1)));
+//	}
+//	dev->params[BREATH_R].val.fbuf[1] = (best_bpm.avg/(5+rand_int_decimal(2,1))); // Assign AVG.
+//
+//	// Assign GOOD_K parameter for each current SNSMEMS.
+//	// -------------------------------------------------
+//	if (  best_bpm.k1 < dev->params[GOOD_K].val.fbuf[0] ) { // Check for MIN
+//		ESP_LOGD(TAG,"Position value MIN found.");
+//		dev->params[GOOD_K].val.fbuf[0] = best_bpm.k1;
+//	}
+//	if ( best_bpm.k1 > dev->params[GOOD_K].val.fbuf[2] ) { // Check for MAX.
+//		ESP_LOGD(TAG,"Position value MAX found.");
+//		dev->params[GOOD_K].val.fbuf[2] = best_bpm.k1;
+//	}
+//	dev->params[GOOD_K].val.fbuf[1] = best_bpm.k1; // Assign AVG.
 
 	return 0;
 }

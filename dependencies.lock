@@ -1,33 +1,15 @@
 dependencies:
-  espressif/cmake_utilities:
-    component_hash: 351350613ceafba240b761b4ea991e0f231ac7a9f59a9ee901f751bddc0bb18f
+  espressif/esp-dsp:
+    component_hash: 42dce32d46ac93dc11f60d368e29a830e9661c7345d794b8a45c343479cae636
     source:
       service_url: https://api.components.espressif.com/
       type: service
-    version: 0.5.3
-  espressif/json_parser:
-    component_hash: d74b81729ad06ec11ff5eb5b1b0d7df1d00e6027fc11471f4b139c70dcf1b1e4
-    source:
-      service_url: https://api.components.espressif.com/
-      type: service
-    version: 1.0.3
-  espressif/led_indicator:
-    component_hash: 7a95d7eb331a71a0dc29ef904a6b6b513fa23f0ce42776545a1e950c40ee94bc
-    source:
-      service_url: https://api.components.espressif.com/
-      type: service
-    version: 0.9.2
-  espressif/led_strip:
-    component_hash: 28c6509a727ef74925b372ed404772aeedf11cce10b78c3f69b3c66799095e2d
-    source:
-      service_url: https://api.components.espressif.com/
-      type: service
-    version: 2.5.5
+    version: 1.7.0
   idf:
     component_hash: null
     source:
       type: idf
     version: 4.4.7
-manifest_hash: 5b244d2a61f9fa8ca0d521c2a571c190878fa4675a20f103def5d24b9c9853e2
+manifest_hash: 9d3791e740d34974242c6c4c288cf8f2c6e3364b3e0b7749e415fb04b2f42c92
 target: esp32
 version: 1.0.0
