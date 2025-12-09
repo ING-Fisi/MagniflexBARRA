@@ -468,7 +468,10 @@ void acq_snsmems_env_data ( magniflex_reg_t *dev ) {
 //		accx[1],accy[1],accz[1],
 //		accx[2],accy[2],accz[2]);
 		
-		printf("$%d %d %d %d %d %d %d %d %d;", accx[0],accy[0],accz[0], accx[1],accy[1],accz[1], accx[2],accy[2],accz[2]);
+		//printf("$%d %d %d %d %d %d %d %d %d;", accx[0],accy[0],accz[0], accx[1],accy[1],accz[1], accx[2],accy[2],accz[2]);
+		
+		
+		printf("$%f %f %f;", angle[0],angle[1],angle[2]);
 
 
 	dev->params[TEMP].val.fbuf[0] = tmp_temp;
