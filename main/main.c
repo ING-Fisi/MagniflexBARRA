@@ -756,9 +756,24 @@ void ctrl_tsk(void *vargs) {
 			acq_snsmems_data(&curdev);
 		}
 
+
+//**************************************************************************************/
+//********************* Modificare questi offset per le temperature e umidita **********/
+
+		/*******************************************************************************/
+		//curdev.params[HUM].val.fbuf[1] = h;
+		//curdev.params[HUM_A].val.fbuf[0] = h;// - 5;
+		//curdev.params[TEMP_A].val.fbuf[0] = curdev.params[TEMP].val.fbuf[0];// - 3;
+		/*******************************************************************************/
+		
+		/*******************************************************************************/
 		curdev.params[HUM].val.fbuf[1] = h;
-		curdev.params[HUM_A].val.fbuf[0] = h - 5;
-		curdev.params[TEMP_A].val.fbuf[0] = curdev.params[TEMP].val.fbuf[0] - 3;
+		curdev.params[HUM_A].val.fbuf[0] = curdev.params[HUM].val.fbuf[1];
+		
+		curdev.params[TEMP_A].val.fbuf[0] = curdev.params[TEMP].val.fbuf[0]+2;
+		//curdev.params[TEMP_A].val.fbuf[0] = 10;
+		/*******************************************************************************/
+	
 
 		memset(js, 0, sizeof(js));
 		memset(pjsdata, 0, sizeof(pjsdata));

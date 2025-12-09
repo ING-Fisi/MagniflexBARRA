@@ -452,7 +452,7 @@ void acq_snsmems_env_data ( magniflex_reg_t *dev ) {
 
 	}
 
-	dev->params[TEMP].val.fbuf[0] = tmp_temp;
+	dev->params[TEMP].val.fbuf[0] = tmp_temp - 2; //dev->params[TEMP].val.fbuf[0] = tmp_temp;
 	//ESP_LOGW(TAG,"temp: %.2f", dev->params[TEMP].val.fbuf[0]);
 	// Count replying sensors.
 	int rply_sns_cnt = 0;
