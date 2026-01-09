@@ -1186,11 +1186,11 @@ static void ota_request(char *output_buffer, int buffer_len) {
 
 void ota_check(void) {
 
-	char output_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0};
-	ota_request(output_buffer, MAX_HTTP_OUTPUT_BUFFER);
+	//char output_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0};
+	//ota_request(output_buffer, MAX_HTTP_OUTPUT_BUFFER);
 
-	if (strcmp(output_buffer, fw_ver_str) != 0) {
-		ESP_LOGI(TAG, "%s", output_buffer);
+	//if (strcmp(output_buffer, fw_ver_str) != 0) {
+		//ESP_LOGI(TAG, "%s", output_buffer);
 
 		esp_http_client_config_t config_ota = {
 			.url = "http://mqtt.fisitron.com:8080/ota/magniflex.bin",
@@ -1205,7 +1205,7 @@ void ota_check(void) {
 		} else {
 			ESP_LOGE(TAG, "Firmware upgrade failed");
 		}
-	}
+	//}
 }
 
 //***************************************************************************************************************************//
