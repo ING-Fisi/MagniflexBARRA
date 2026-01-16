@@ -454,6 +454,10 @@ void acq_snsmems_env_data ( magniflex_reg_t *dev ) {
 	}
 	
 	
+	//printf("$%f %d %d %d;\r\n", angle[0], accy[0],accy[1],accy[2]);
+	printf("$%d;\r\n", accx[2]);
+	
+	
 	
 //		ESP_LOGI(TAG,"angl1:%.02f|angl2:%.02f|angl3:%.02f		accx1:%d|accx2:%d|accx3:%d		accy1:%d|accy2:%d|accy3:%d		accz1:%d|accz2:%d|accz3:%d",
 //		angle[0],angle[1],angle[2],
@@ -470,11 +474,12 @@ void acq_snsmems_env_data ( magniflex_reg_t *dev ) {
 		
 		//printf("$%d %d %d %d %d %d %d %d %d;", accx[0],accy[0],accz[0], accx[1],accy[1],accz[1], accx[2],accy[2],accz[2]);
 		
+		//printf("$%d %d %d;\r\n", accz[0],accz[1],accz[2]);
 		
-		//printf("%f %f %f\r\n", angle[0],angle[1],angle[2]);
-		//printf("%d %d %d\r\n", accx[0],accx[1],accx[2]);
-		//printf("%d %d %d\r\n", accy[0],accy[1],accy[2]);
-		printf("%d %d %d\r\n", accz[0],accz[1],accz[2]);
+		//printf("$%f %f %f;\r\n", angle[0],angle[1],angle[2]);
+		//printf("$%d %d %d;\r\n", accx[0],accx[1],accx[2]);
+		//printf("$%d %d %d;\r\n", accy[0],accy[1],accy[2]);
+		//printf("$%d %d %d;\r\n", accz[0],accz[1],accz[2]);
 
 
 	dev->params[TEMP].val.fbuf[0] = tmp_temp;
