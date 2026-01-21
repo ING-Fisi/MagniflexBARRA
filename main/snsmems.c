@@ -17,6 +17,61 @@
 #include "gcpjwt.h"
 #include "main.h"
 
+/**************************************************/
+// Butterworth HPF 0.8 Hz @ Fs = 208 Hz
+#define HP_B0  0.984207f
+#define HP_B1 -1.968414f
+#define HP_B2  0.984207f
+#define HP_A1 -1.968184f
+#define HP_A2  0.968644f
+
+// Butterworth LPF 3.0 Hz @ Fs = 208 Hz
+#define LP_B0  0.002080f
+#define LP_B1  0.004161f
+#define LP_B2  0.002080f
+#define LP_A1 -1.866892f
+#define LP_A2  0.875214f
+
+// Struttura dati
+typedef struct {
+    float x1, x2;
+    float y1, y2;
+} Biquad;
+
+
+// Funzione biquad
+float biquad(float x, Biquad *f,
+             float b0, float b1, float b2,
+             float a1, float a2)
+{
+    float y = b0*x + b1*f->x1 + b2*f->x2
+                    - a1*f->y1 - a2*f->y2;
+
+    f->x2 = f->x1;
+    f->x1 = x;
+    f->y2 = f->y1;
+    f->y1 = y;
+
+    return y;
+}
+
+// Pipeline di filtraggio
+static Biquad hp = {0};
+static Biquad lp = {0};
+
+float filter_acc(float acc)
+{
+    float x = biquad(acc, &hp,
+                     HP_B0, HP_B1, HP_B2,
+                     HP_A1, HP_A2);
+
+    float y = biquad(x, &lp,
+                     LP_B0, LP_B1, LP_B2,
+                     LP_A1, LP_A2);
+
+    return y;
+}
+/**************************************************/
 
 
 /* --------------------- DEFINES -------------------------- *
@@ -454,8 +509,12 @@ void acq_snsmems_env_data ( magniflex_reg_t *dev ) {
 	}
 	
 	
+	
+	
+	
+	
 	//printf("$%f %d %d %d;\r\n", angle[0], accy[0],accy[1],accy[2]);
-	printf("$%d;\r\n", accx[2]);
+	//printf("$%d;\r\n", accz[0]);
 	
 	
 	
@@ -464,19 +523,71 @@ void acq_snsmems_env_data ( magniflex_reg_t *dev ) {
 //		accx[0],accx[1],accx[2],
 //		accy[0],accy[1],accy[2],
 //		accz[0],accz[1],accz[2]);
+//	printf("%d:%d:%d	%d:%d:%d	%d:%d:%d\r\n",
+//				accx[0],accy[0],accz[0],
+//				accx[1],accy[1],accz[1],
+//				accx[2],accy[2],accz[2]);
+
+	/**********************************************************************/
+#ifdef TEST
+	float ax_mg[3];
+	float ay_mg[3];
+	float az_mg[3];
+	for(int i=0; i<dev->cnt_nsns; i++){
+		ax_mg[i]=accx[i]*0.061f;
+		ay_mg[i]=accy[i]*0.061f;
+		az_mg[i]=accz[i]*0.061f;
+	}
+
+//	printf("%f:%f:%f	%f:%f:%f	%f:%f:%f\r\n",
+//				ax_mg[0],ay_mg[0],az_mg[0],
+//				ax_mg[1],ay_mg[1],az_mg[1],
+//				ax_mg[2],ay_mg[2],az_mg[2]);			
+//	printf("%f:%f:%f\r\n", az_mg[0], az_mg[1], az_mg[2]);
 
 
+	float acc_mag[3];
+	float acc_filt[3];
+	for(int i=0; i<dev->cnt_nsns; i++){
+		
+		//acc_mag[i]=ax_mg[i];
+		//acc_mag[i]=ay_mg[i];
+		//acc_mag[i]=az_mg[i];
+		
+		acc_mag[i] = sqrt(ax_mg[i]*ax_mg[i] +
+                     ay_mg[i]*ay_mg[i] +
+                     az_mg[i]*az_mg[i]);
+                     
+       acc_filt[i] = filter_acc(acc_mag[i]);
+       if(acc_filt[i]<0){acc_filt[i]*=(-1);}
+       if(acc_filt[i]<0.009){acc_filt[i]=0;}
+       acc_filt[i] = acc_filt[i] * 10000.0f;
 
-//		printf("%d:%d:%d	%d:%d:%d	%d:%d:%d\r\n",
-//		accx[0],accy[0],accz[0],
-//		accx[1],accy[1],accz[1],
-//		accx[2],accy[2],accz[2]);
+	}
+	acc_filt[0]=acc_filt[0]+acc_filt[1]+acc_filt[2];
+	acc_filt[1]=acc_filt[0];
+	acc_filt[2]=acc_filt[1];
+	printf("$%f %f %f;\r\n", acc_filt[0], acc_filt[1], acc_filt[2]);
+#endif
+	/**********************************************************************/
+	
+	
+	
+	
+	
+	
 		
 		//printf("$%d %d %d %d %d %d %d %d %d;", accx[0],accy[0],accz[0], accx[1],accy[1],accz[1], accx[2],accy[2],accz[2]);
 		
 		//printf("$%d %d %d;\r\n", accz[0],accz[1],accz[2]);
 		
-		//printf("$%f %f %f;\r\n", angle[0],angle[1],angle[2]);
+		
+	for(int i=0; i<dev->cnt_nsns; i++){
+		if(angle[i]<0){angle[i]=(-1.0f)*angle[i];}
+       	if(angle[i]<0.01){angle[i]=0;}
+       	angle[i] = angle[i] * 1000.0f;
+	}
+	printf("$%f %f %f;\r\n", angle[0],angle[1],angle[2]);
 		//printf("$%d %d %d;\r\n", accx[0],accx[1],accx[2]);
 		//printf("$%d %d %d;\r\n", accy[0],accy[1],accy[2]);
 		//printf("$%d %d %d;\r\n", accz[0],accz[1],accz[2]);
@@ -542,7 +653,6 @@ void acq_snsmems_env_data ( magniflex_reg_t *dev ) {
 //	memset(js_speed,0,sizeof(js_speed));
 //	memset(pjsdata_speed,0,sizeof(pjsdata_speed));
 //	chck_req_periodic_pub(dev, js_speed, pjsdata_speed);
-
 
 }
 
