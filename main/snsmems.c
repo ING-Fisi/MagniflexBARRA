@@ -17,6 +17,8 @@
 #include "mqtt.h"
 #include "snsmems.h"
 
+
+
 /* --------------------- DEFINES -------------------------- *
  * -------------------------------------------------------- */
 typedef struct {
@@ -67,6 +69,12 @@ IRAM_ATTR uint8_t
 bpm_data_t bpm[NSNS][6];
 
 int magindx = 0; // Index to Mag board.
+
+
+/**********************************************************/
+unsigned int presenceTimeoutIdx = 0; // max=4.294.967.295
+/**********************************************************/
+
 
 #ifdef USE_PERIOD_CIRCBUF
 // Circular buffers.
@@ -535,7 +543,31 @@ void acq_snsmems_env_data(magniflex_reg_t *dev) {
 				ESP_LOGW(TAG, "Presence not detected, reset time.");
 			}
 		}
+		
+		
+		/*************************************************************************************/
+		if(dev->presence==1){
+			presenceTimeoutIdx++; // max=4.294.967.295
+			
+			if(presenceTimeoutIdx==3){
+				ESP_LOGI(TAG, "TIMEOUT PRESENZA: presenceTimeoutIdx=%d", presenceTimeoutIdx);				
+				for( int i = 0; i < dev->cnt_nsns; i++ ){
+					//tare_request = false;
+					dev->prsnc_trsh[i * 2] = angle[i] - PRESENCE_THRESH;
+					dev->prsnc_trsh[i * 2 + 1] = angle[i] + PRESENCE_THRESH;
+					ESP_LOGW(TAG, "Save New Threshold Values [%.3f,%.3f].",
+							 angle[i] - PRESENCE_THRESH, angle[i] + PRESENCE_THRESH);
+				
+					snsmems_nvs_save_thrsh(dev->prsnc_trsh, MAX_NSNS * 2);
+					
+					presenceTimeoutIdx=0;
+				}	
+			}
+		}
+		/*************************************************************************************/
+		
 	}
+	
 }
 
 int get_periods_data(magniflex_reg_t *dev, int i, uint16_t *buf, int len,
