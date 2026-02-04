@@ -803,6 +803,8 @@ esp_err_t my_mqtt_event_handler(esp_mqtt_event_handle_t event) {
 }
 
 void ctrl_tsk(void *vargs) {
+	
+	
 
 	fisitron_mqtt_app_start();
 
@@ -821,7 +823,13 @@ void ctrl_tsk(void *vargs) {
 
 	//};
 	if (mqtt_app_start(&mqttc, &mqttcfg) == ESP_FAIL) {
-		// esp_restart();
+
+		while (1) {
+			// esp_restart();
+			int ret = send_fisitron_message("MQTT MAIN FAILED");
+
+			vTaskDelay(1000 / portTICK_PERIOD_MS);
+		}
 	} else {
 
 		//***************************************************************************//
@@ -1186,25 +1194,25 @@ static void ota_request(char *output_buffer, int buffer_len) {
 
 void ota_check(void) {
 
-	//char output_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0};
-	//ota_request(output_buffer, MAX_HTTP_OUTPUT_BUFFER);
+	// char output_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0};
+	// ota_request(output_buffer, MAX_HTTP_OUTPUT_BUFFER);
 
-	//if (strcmp(output_buffer, fw_ver_str) != 0) {
-		//ESP_LOGI(TAG, "%s", output_buffer);
+	// if (strcmp(output_buffer, fw_ver_str) != 0) {
+	// ESP_LOGI(TAG, "%s", output_buffer);
 
-		esp_http_client_config_t config_ota = {
-			.url = "http://mqtt.fisitron.com:8080/ota/magniflex.bin",
-			//.cert_pem = NULL,
-			.event_handler = _http_event_handler,
-			.keep_alive_enable = true,
-		};
+	esp_http_client_config_t config_ota = {
+		.url = "http://mqtt.fisitron.com:8080/ota/MAGNIFLEX_BARRE/magniflex.bin",
+		//.cert_pem = NULL,
+		.event_handler = _http_event_handler,
+		.keep_alive_enable = true,
+	};
 
-		esp_err_t retur = esp_https_ota(&config_ota);
-		if (retur == ESP_OK) {
-			esp_restart();
-		} else {
-			ESP_LOGE(TAG, "Firmware upgrade failed");
-		}
+	esp_err_t retur = esp_https_ota(&config_ota);
+	if (retur == ESP_OK) {
+		esp_restart();
+	} else {
+		ESP_LOGE(TAG, "Firmware upgrade failed");
+	}
 	//}
 }
 
@@ -1379,9 +1387,8 @@ void app_main(void) {
 	//********************************************************//
 	//***************************************************************************************************************************//
 	get_mac_str(macstr);
-	
-	//nvs_flash_erase();
 
+	// nvs_flash_erase();
 
 	//***************************************************************************************************************************//
 	//******************************************************** WIFI INIT
