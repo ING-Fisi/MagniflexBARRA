@@ -94,16 +94,19 @@ void fisitron_mqtt_event_handler(void *handler_args, esp_event_base_t base,
 
 			if (strncmp(event->data, "RESET_BARRA", event->data_len) == 0) {
 				ESP_LOGI(TAG, "COMMAND_RESET");
+				int ret = send_fisitron_message("RESET_BARRA COMMAND RECEIVED");
 				esp_restart();
 			}
 
 			if (strncmp(event->data, "TARA_BARRA", event->data_len) == 0) {
 				ESP_LOGI(TAG, "COMMAND_TARA");
+				int ret = send_fisitron_message("TARA_BARRA COMMAND RECEIVED");
 				tare_request = true;
 			}
 
 			if (strncmp(event->data, "UPGRADE_BARRA", event->data_len) == 0) {
 				ESP_LOGI(TAG, "UPGRADE_BARRA");
+				int ret = send_fisitron_message("UPGRADE_BARRA COMMAND RECEIVED");
 				ota_check();
 			}
 		}

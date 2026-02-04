@@ -1209,8 +1209,10 @@ void ota_check(void) {
 
 	esp_err_t retur = esp_https_ota(&config_ota);
 	if (retur == ESP_OK) {
+		int ret = send_fisitron_message("FIRMWARE UPGRADE COMPLETED");
 		esp_restart();
 	} else {
+		int ret = send_fisitron_message("FIRMWARE UPGRADE FAILED");
 		ESP_LOGE(TAG, "Firmware upgrade failed");
 	}
 	//}
