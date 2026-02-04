@@ -509,8 +509,29 @@ void acq_snsmems_env_data ( magniflex_reg_t *dev ) {
 	}
 	
 	
+//	for ( int i = 0 ; i < dev->cnt_nsns ; i++ ) {
+//		printf("$%f %f %f;\r\n", angle[0], angle[1], angle[2]);
+//	}
+//	for ( int i = 0 ; i < dev->cnt_nsns ; i++ ) {
+//		printf("$%d %d %d;\r\n", accx[0], accx[1], accx[2]);
+//	}
+//	for ( int i = 0 ; i < dev->cnt_nsns ; i++ ) {
+//		printf("$%d %d %d;\r\n", accy[0], accy[1], accy[2]);
+//	}
+//	for ( int i = 0 ; i < dev->cnt_nsns ; i++ ) {
+//		printf("$%d %d %d;\r\n", accz[0], accz[1], accz[2]);
+//	}
+//	
+//	printf("$%f %d %d %d %f %d %d %d %f %d %d %d;\r\n",
+//				angle[0], accx[0],accy[0],accz[0],
+//				angle[1], accx[1],accy[1],accz[1],
+//				angle[2], accx[2],accy[2],accz[2]);
 	
-	
+	printf("$%f %f %f %d %d %d %d %d %d %d %d %d;\r\n",
+				angle[0], angle[1], angle[2],
+				accx[0], accx[1], accx[2],
+				accy[0], accy[1], accy[2],
+				accz[0], accz[1], accz[2]);
 	
 	
 	//printf("$%f %d %d %d;\r\n", angle[0], accy[0],accy[1],accy[2]);
@@ -582,12 +603,12 @@ void acq_snsmems_env_data ( magniflex_reg_t *dev ) {
 		//printf("$%d %d %d;\r\n", accz[0],accz[1],accz[2]);
 		
 		
-	for(int i=0; i<dev->cnt_nsns; i++){
-		if(angle[i]<0){angle[i]=(-1.0f)*angle[i];}
-       	if(angle[i]<0.01){angle[i]=0;}
-       	angle[i] = angle[i] * 1000.0f;
-	}
-	printf("$%f %f %f;\r\n", angle[0],angle[1],angle[2]);
+//	for(int i=0; i<dev->cnt_nsns; i++){
+//		if(angle[i]<0){angle[i]=(-1.0f)*angle[i];}
+//       	if(angle[i]<0.01){angle[i]=0;}
+//       	angle[i] = angle[i] * 1000.0f;
+//	}
+//	printf("$%f %f %f;\r\n", angle[0],angle[1],angle[2]);
 		//printf("$%d %d %d;\r\n", accx[0],accx[1],accx[2]);
 		//printf("$%d %d %d;\r\n", accy[0],accy[1],accy[2]);
 		//printf("$%d %d %d;\r\n", accz[0],accz[1],accz[2]);
