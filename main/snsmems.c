@@ -564,6 +564,21 @@ void acq_snsmems_env_data(magniflex_reg_t *dev) {
 				}	
 			}
 		}
+		
+		
+		if(dev->presence == 0)
+		{
+			
+			ESP_LOGW(TAG, "\n!!!!!!!! SNSMEMS DEV->PRESENCE=0 !!!!!!!!\n");
+			
+			dev->params[HEART_R].val.fbuf[0] = 0;
+			dev->params[HEART_R].val.fbuf[1] = 0;
+			dev->params[HEART_R].val.fbuf[2] = 0;
+			
+			dev->params[BREATH_R].val.fbuf[0] = 0;
+			dev->params[BREATH_R].val.fbuf[1] = 0;
+			dev->params[BREATH_R].val.fbuf[2] = 0;
+		}
 		/*************************************************************************************/
 		
 	}
@@ -1046,11 +1061,19 @@ int acq_snsmems_data(magniflex_reg_t *dev) {
 		(best_bpm.avg / (5 + rand_int_decimal(2, 1))); // Assign AVG.
 		
 		
-		if(dev->presence == 0)
-		{
-			dev->params[HEART_R].val.fbuf[1] = 0;
-			dev->params[BREATH_R].val.fbuf[1] = 0;
-		}
+	if(dev->presence == 0)
+	{
+		
+		ESP_LOGW(TAG, "\n!!!!!!!! SNSMEMS DEV->PRESENCE=0 !!!!!!!!\n");
+		
+		dev->params[HEART_R].val.fbuf[0] = 0;
+		dev->params[HEART_R].val.fbuf[1] = 0;
+		dev->params[HEART_R].val.fbuf[2] = 0;
+		
+		dev->params[BREATH_R].val.fbuf[0] = 0;
+		dev->params[BREATH_R].val.fbuf[1] = 0;
+		dev->params[BREATH_R].val.fbuf[2] = 0;
+	}
 
 	// Assign GOOD_K parameter for each current SNSMEMS.
 	// -------------------------------------------------

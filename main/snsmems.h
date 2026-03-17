@@ -39,7 +39,7 @@
 
 #define NSNS 3
 #define FREQSAMP 208
-#define PRESENCE_THRESH (3*0.005f)
+#define PRESENCE_THRESH 0.001f //(3*0.001f)
 
 #define RAW2BPM(x) ((float)FREQSAMP/x)*60
 #define BPM2RAW(x) ((float)FREQSAMP/x)*60.0f
