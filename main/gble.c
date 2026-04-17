@@ -58,7 +58,7 @@ int msgindxin = 0;
 int msgindxout = 0;
 int msgcnt = 0;
 ble_msg_t blemsg_buff[BLE_MSGBUFF_SIZE];
-static bool is_ble_conn = false;
+bool is_ble_conn = false;
 
 ///Declare the static function
 static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);

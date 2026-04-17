@@ -26,11 +26,13 @@
 
 /* --------------------- VARIABLES ----------------------- *
  * ------------------------------------------------------- */
-static const char* TAG = "GCPJWT";
+static const char* TAG = "JWT";
 
 long expire_t = 0; // TODO: put into GIOTC structure.
 
-uint8_t *oBuf;
+
+#define OBUF_SIZE 2000
+uint8_t oBuf[OBUF_SIZE];
 
 /* Return a string representation of an mbedtls error code */
 static char* mbedtlsError(int errnum) {
@@ -42,6 +44,9 @@ static char* mbedtlsError(int errnum) {
 long get_expire_t ( void ) {
 	return expire_t;
 }
+
+
+
 
 int xgiotc_gen_JWT(char *jwtstr, uint32_t len, uint32_t exp_time_s) {
 
@@ -80,19 +85,12 @@ int xgiotc_gen_JWT(char *jwtstr, uint32_t len, uint32_t exp_time_s) {
         return -1;
     }
 
-//    uint8_t oBuf[5000];
-    oBuf = (uint8_t*) malloc(8000);
-    if (oBuf == NULL) {
-    	ESP_LOGE(TAG,"error: oBuf null");
-    	free(oBuf);
-    	return -1;
-    }
+    memset(oBuf,0,OBUF_SIZE);
 
     uint8_t digest[32];
     rc = mbedtls_md(mbedtls_md_info_from_type(MBEDTLS_MD_SHA256), headerAndPayload, strlen((char*)headerAndPayload), digest);
     if (rc != 0) {
     	ESP_LOGE(TAG,"Failed to mbedtls_md: %d (-0x%x): %s\n", rc, -rc, mbedtlsError(rc));
-    	free(oBuf);
         return -1;
     }
 
@@ -100,7 +98,6 @@ int xgiotc_gen_JWT(char *jwtstr, uint32_t len, uint32_t exp_time_s) {
     rc = mbedtls_pk_sign(&pk_context, MBEDTLS_MD_SHA256, digest, sizeof(digest), oBuf, &retSize, NULL, NULL);
     if (rc != 0) {
         ESP_LOGE(TAG,"Failed to mbedtls_pk_sign: %d (-0x%x): %s\n", rc, -rc, mbedtlsError(rc));
-    	free(oBuf);
         return -1;
     }
 
@@ -111,14 +108,12 @@ int xgiotc_gen_JWT(char *jwtstr, uint32_t len, uint32_t exp_time_s) {
     int rqlen = 0;
     if ( (rqlen = (strlen((char*)headerAndPayload) + 1 + strlen((char*)base64Signature) + 1)) >= len ) {
     	ESP_LOGE(TAG,"error: too short external JWT buffer, needed: %d, given: %d.", rqlen, len);
-    	free(oBuf);
         return -1;
     }
     sprintf(jwtstr, "%s.%s", headerAndPayload, base64Signature);
 
     mbedtls_pk_free(&pk_context);
 
-	free(oBuf);
     return 0;
 }
 

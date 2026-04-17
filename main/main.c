@@ -53,6 +53,11 @@
 #include "Fisitron.h"
 #include "ftp.h"
 
+
+//**********************************************************/
+
+#define VERSIONE_FW "1.0.1"
+
 /* --------------------- DEFINES ------------------------- *
  * ------------------------------------------------------- */
 // #define MAX_NSNS 	60
@@ -92,6 +97,7 @@ esp_mqtt_client_handle_t mqttc;
 esp_mqtt_client_config_t mqttcfg;
 
 extern esp_mqtt_client_handle_t mqtt_fisitron;
+extern bool is_ble_conn;
 
 char ts[50];
 char js[PUBSTR_SIZE];
@@ -730,6 +736,7 @@ void mqtt_cmd_parse(magniflex_reg_t *dev, char *cmd_js) {
 }
 
 esp_err_t my_mqtt_event_handler(esp_mqtt_event_handle_t event) {
+
 	esp_mqtt_client_handle_t client = event->client;
 	int msg_id = 0;
 	// your_context_t *context = event->context;
@@ -746,14 +753,6 @@ esp_err_t my_mqtt_event_handler(esp_mqtt_event_handle_t event) {
 	case MQTT_EVENT_DISCONNECTED:
 		ESP_LOGW(TAG, "MQTT_EVENT_DISCONNECTED");
 		set_mqtt_service_state(MQTT_SERV_DISCONNECTED);
-
-		if (wifi_connected == true) {
-			if (mqtt_app_start(&mqttc, &mqttcfg) == ESP_FAIL) {
-				esp_restart();
-			}
-		} else {
-			esp_restart();
-		}
 
 		break;
 	case MQTT_EVENT_SUBSCRIBED:
@@ -802,9 +801,12 @@ esp_err_t my_mqtt_event_handler(esp_mqtt_event_handle_t event) {
 	return ESP_OK;
 }
 
+const char *json_heart_beat =
+	"{\"nome\":\"Mario\",\"cognome\":\"Rossi\",\"eta\":30,\"is_attivo\":true,"
+	"\"hobby\":[\"musica\",\"sport\",\"lettura\"],\"indirizzo\":{\"citta\":"
+	"\"Roma\",\"cap\":\"00100\"},\"note\":null}";
+
 void ctrl_tsk(void *vargs) {
-	
-	
 
 	fisitron_mqtt_app_start();
 
@@ -819,38 +821,21 @@ void ctrl_tsk(void *vargs) {
 	// esp_mqtt_client_config_t mqttcfg = {
 	mqttcfg.uri = GCPIOT_BROKER_URI;
 	mqttcfg.event_handle = my_mqtt_event_handler;
-	mqttcfg.task_stack = 5 * (1024);
+	// mqttcfg.task_stack = 5 * (1024);
+	mqttcfg.buffer_size =
+		1024; // Riduci se non invii messaggi enormi (default è 1536)
+	mqttcfg.out_buffer_size = 1024; // Riduci se possibile
+	mqttcfg.task_stack = 2 * 4096;
 
 	//};
-	if (mqtt_app_start(&mqttc, &mqttcfg) == ESP_FAIL) {
-
-		while (1) {
-			// esp_restart();
-			int ret = send_fisitron_message("MQTT MAIN FAILED");
-
-			vTaskDelay(1000 / portTICK_PERIOD_MS);
-		}
-	} else {
+	if (mqtt_app_start(&mqttc, &mqttcfg) == ESP_OK) {
 
 		//***************************************************************************//
 		//***************************************************************************//
 		//****************************CTRL
-		// TASK**************************************//
+		//TASK**************************************//
 		//***************************************************************************//
 		//***************************************************************************//
-		long print_heap_tm = get_curtimestamp();
-
-		while ((get_mqtt_service_state() < MQTT_SERV_CONNECTED)) {
-			if (chck_time_int(&print_heap_tm, 30) == 1) { // DBG: print memory
-				ESP_LOGI(TAG, "free heap: %8u B (NOW), min: %8u B (MIN)",
-						 esp_get_free_heap_size(),
-						 esp_get_minimum_free_heap_size());
-				ESP_LOGI(TAG, "used heap: %8u B (NOW), min: %8u B (MAX)",
-						 used_heap - esp_get_free_heap_size(),
-						 used_heap - esp_get_minimum_free_heap_size());
-			}
-			vTaskDelay(1000 / portTICK_PERIOD_MS);
-		}
 
 		ESP_LOGI(TAG, "Run working tasks.");
 
@@ -874,7 +859,30 @@ void ctrl_tsk(void *vargs) {
 
 		period_buf_init();
 
+		long print_heap_tm = get_curtimestamp();
+
 		while (1) {
+
+			if ((get_mqtt_service_state() < MQTT_SERV_CONNECTED)) {
+				if (chck_time_int(&print_heap_tm, 30) ==
+					1) { // DBG: print memory
+
+					ESP_LOGI(TAG, "free heap: %8u B (NOW), min:%8u B(MIN) ",
+							 esp_get_free_heap_size(),
+							 esp_get_minimum_free_heap_size());
+
+					ESP_LOGI(TAG, "used heap: %8u B (NOW), min: %8u B (MAX)",
+							 used_heap - esp_get_free_heap_size(),
+							 used_heap - esp_get_minimum_free_heap_size());
+
+					//********************retry of communication process
+					//**************************/
+
+					mqtt_app_start(&mqttc, &mqttcfg);
+				}
+
+				vTaskDelay(1000 / portTICK_PERIOD_MS);
+			}
 
 			if (ftp_getstate() == E_FTP_STE_CONNECTED) {
 
@@ -883,7 +891,6 @@ void ctrl_tsk(void *vargs) {
 			} else {
 
 				float t = 0.0f, h = 0.0f;
-				// Acquire environment parameters.
 				MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_TEMPERATURE, &t);
 				MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_HUMIDITY, &h);
 
@@ -895,12 +902,9 @@ void ctrl_tsk(void *vargs) {
 
 				if (curdev.cnt_nsns < 2) {
 					ESP_LOGW(TAG, "no snsmems detected, try enumaration.");
-
 					vTaskDelay(1000 / portTICK_PERIOD_MS);
-
 				} else {
 					acq_snsmems_data(&curdev);
-
 					memset(js, 0, sizeof(js));
 					memset(pjsdata, 0, sizeof(pjsdata));
 					chck_req_periodic_pub(&curdev, js, pjsdata);
@@ -911,7 +915,7 @@ void ctrl_tsk(void *vargs) {
 				gpio_set_level(GPIO_OUTPUT_IO_0, 0);
 				vTaskDelay(20 / portTICK_PERIOD_MS);
 
-				int ret = send_fisitron_message("HEART_BEAT");
+				int ret = send_fisitron_message(json_heart_beat);
 			}
 		}
 
@@ -921,6 +925,7 @@ void ctrl_tsk(void *vargs) {
 		//***************************************************************************//
 		//***************************************************************************//
 	}
+
 	vTaskDelete(NULL);
 }
 
@@ -928,7 +933,9 @@ static void event_handler(void *arg, esp_event_base_t event_base,
 						  int32_t event_id, void *event_data) {
 	if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
 		wifi_connected = false;
-		esp_wifi_connect();
+
+		if (is_ble_conn == false)
+			esp_wifi_connect();
 	}
 
 	else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
@@ -938,7 +945,9 @@ static void event_handler(void *arg, esp_event_base_t event_base,
 	else if (event_base == WIFI_EVENT &&
 			 event_id == WIFI_EVENT_STA_DISCONNECTED) {
 		wifi_connected = false;
-		esp_wifi_connect();
+
+		if (is_ble_conn == false)
+			esp_wifi_connect();
 		ESP_LOGI(TAG, "retry to connect to the Wifi");
 	}
 
@@ -1201,7 +1210,8 @@ void ota_check(void) {
 	// ESP_LOGI(TAG, "%s", output_buffer);
 
 	esp_http_client_config_t config_ota = {
-		.url = "http://mqtt.fisitron.com:8080/ota/MAGNIFLEX_BARRE/magniflex.bin",
+		.url =
+			"http://mqtt.fisitron.com:8080/ota/MAGNIFLEX_BARRE/magniflex.bin",
 		//.cert_pem = NULL,
 		.event_handler = _http_event_handler,
 		.keep_alive_enable = true,
@@ -1276,6 +1286,8 @@ esp_err_t mountLITTLEFS(char *partition_label, char *mount_point) {
 
 void app_main(void) {
 
+	bool start_with_default_wifi = false;
+
 	used_heap = esp_get_free_heap_size(); // Memory debug variable.
 
 	/* Setup components log levels without rebuild whole IDF *
@@ -1323,6 +1335,7 @@ void app_main(void) {
 	FILE *f = fopen("/root/Cert/rsa_private.pem", "r");
 	if (f == NULL) {
 		ESP_LOGE(TAG, "Failed to open file for reading");
+		start_with_default_wifi = true;
 	} else {
 		// char line[64];
 		// fgets(line, sizeof(line), f);
@@ -1390,7 +1403,55 @@ void app_main(void) {
 	//***************************************************************************************************************************//
 	get_mac_str(macstr);
 
-	// nvs_flash_erase();
+	//***************************************************************************************************************************//
+	//************************************************** GET MAC ADDRESS
+	//********************************************************//
+	//***************************************************************************************************************************//
+
+	// 2. CONTROLLO FLASH ERASE / PRIMO AVVIO ASSOLUTO (Tramite NVS)
+	nvs_handle_t my_handle;
+	err = nvs_open("storage", NVS_READWRITE, &my_handle);
+	if (err == ESP_OK) {
+		int32_t boot_count = 0;
+		err = nvs_get_i32(my_handle, "boot_count", &boot_count);
+
+		if (err == ESP_ERR_NVS_NOT_FOUND) {
+			ESP_LOGW(TAG,
+					 "PRIMO AVVIO ASSOLUTO: NVS vuota (Flash Erase rilevato)");
+			// Esegui qui init di fabbrica (es. formatta SPIFFS, genera chiavi)
+			boot_count = 1;
+		} else {
+			boot_count++;
+			ESP_LOGI(TAG, "Avvio numero: %d", (int)boot_count);
+		}
+		nvs_set_i32(my_handle, "boot_count", boot_count);
+		nvs_commit(my_handle);
+		nvs_close(my_handle);
+	}
+
+	//	// 3. CONTROLLO PRIMO AVVIO DOPO OTA (Tramite OTA State)
+	//	const esp_partition_t *running = esp_ota_get_running_partition();
+	//	esp_ota_img_states_t ota_state;
+	//
+	//	if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK) {
+	//		if (ota_state == ESP_OTA_IMG_PENDING_VERIFY) {
+	//			ESP_LOGW(TAG, "PRIMO AVVIO DOPO OTA: Nuova versione in prova");
+	//
+	//			/*
+	//			   Qui inserisci i tuoi test di autodiagnostica (es. connessione
+	//			   Wi-Fi). Se i test falliscono e riavvii senza confermare,
+	// l'ESP 			   farà rollback.
+	//			*/
+	//
+	//			bool health_check = true; // Sostituisci con logica reale
+	//			if (health_check) {
+	//				ESP_LOGI(TAG, "Salute sistema OK. Confermo il nuovo
+	// firmware."); 				esp_ota_mark_app_valid_cancel_rollback();
+	// } else { 				ESP_LOGE(TAG, "Salute sistema FALLITA. Riavvio e
+	// rollback..."); esp_restart();
+	//			}
+	//		}
+	//	}
 
 	//***************************************************************************************************************************//
 	//******************************************************** WIFI INIT
@@ -1417,12 +1478,26 @@ void app_main(void) {
 
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 
-	wifi_config_t wifi_cfg;
-	if (esp_wifi_get_config(ESP_IF_WIFI_STA, &wifi_cfg) != ESP_OK) {
-		ESP_LOGE(TAG,
-				 "Failed to get Wi-Fi configuration in WIFI_STORAGE_FLASH");
+	wifi_config_t wifi_cfg = {
+		.sta =
+			{
+				.ssid = FISITRON_WIFI_SSID,
+				.password = FISITRON_WIFI_PSW,
+			},
+	};
+
+	if (start_with_default_wifi == true) {
+		ESP_LOGI(TAG, "!!!START WITH WIFI DEFAULT CREDENTIAL!!!");
+		esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_cfg);
+
 	} else {
-		ESP_LOGI(TAG, "[%s][%s]", wifi_cfg.sta.ssid, wifi_cfg.sta.password);
+
+		if (esp_wifi_get_config(ESP_IF_WIFI_STA, &wifi_cfg) != ESP_OK) {
+			ESP_LOGE(TAG,
+					 "Failed to get Wi-Fi configuration in WIFI_STORAGE_FLASH");
+		} else {
+			ESP_LOGI(TAG, "[%s][%s]", wifi_cfg.sta.ssid, wifi_cfg.sta.password);
+		}
 	}
 
 	//***************************************************************************************************************************//
@@ -1534,7 +1609,7 @@ void app_main(void) {
 	xTaskCreatePinnedToCore(ftp_task, "ftp_task", 1024 * 6, NULL, 2, NULL,
 							1 /*tskNO_AFFINITY*/);
 
-	xTaskCreatePinnedToCore(ctrl_tsk, "ctrl_tsk", 1024 * 5, NULL, 4, NULL,
+	xTaskCreatePinnedToCore(ctrl_tsk, "ctrl_tsk", 1024 * 6, NULL, 4, NULL,
 							1 /*tskNO_AFFINITY*/);
 
 	vTaskDelete(NULL);

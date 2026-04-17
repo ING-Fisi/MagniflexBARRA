@@ -18,7 +18,7 @@
 
 /* --------------------- VARIABLES ----------------------- *
  * ------------------------------------------------------- */
-static const char *TAG = "MQTT";
+static const char *TAG = "MQTT CLOUD";
 
 // IOT Core topic definition
 char device_path[200];
@@ -28,11 +28,14 @@ char giotc_cfg_dev_id[50];
 char giotc_data_topic[50];
 char giotc_data_topic_sub[50];
 
-char *jwt;
+
+#define JWT_SIZE 1000
+char jwt[JWT_SIZE];
 
 esp_err_t mqtt_app_start(esp_mqtt_client_handle_t *mqtt_client,
 						 esp_mqtt_client_config_t *mqtt_ext_cfg) {
-	esp_err_t ret = ESP_OK;
+							
+	esp_err_t ret = ESP_FAIL;
 	esp_mqtt_client_config_t mqtt_cfg;
 
 	memcpy(&mqtt_cfg, mqtt_ext_cfg,
@@ -44,54 +47,33 @@ esp_err_t mqtt_app_start(esp_mqtt_client_handle_t *mqtt_client,
 		return ESP_FAIL;
 	}
 
-	jwt = (char *)malloc(5000);
+	memset(jwt,0,JWT_SIZE);
 	if (strcmp(mqtt_ext_cfg->uri, GCPIOT_BROKER_URI) == 0)
-	{ // If google URI detected use GIOTC.
-
-		//*******************************************************************
+	{ 
 		// JWT ****************************************************//
-		if (xgiotc_gen_JWT(jwt, 5000, 3600) < 0) {
-			free(jwt);
-			return ESP_FAIL;
-		}
-		if (jwt != NULL) {
-			ESP_LOGV(TAG, "JWT: %s", jwt);
-		} else {
-			ESP_LOGE(TAG, "error: jwt null");
-			free(jwt);
+		if (xgiotc_gen_JWT(jwt, JWT_SIZE, 3600) < 0) {
 			return ESP_FAIL;
 		}
 
-		// xgiotc_print_cfg(NULL);
 		mqtt_cfg.uri = GCPIOT_BROKER_URI;
 		mqtt_cfg.client_id = giotc_cfg_dev_id;
 		mqtt_cfg.cert_pem = (const char *)roots_pem_start;
 		mqtt_cfg.username = "device";
 		mqtt_cfg.password = (const char *)jwt;
-		//		mqtt_cfg.keepalive = 60;
-		//		memcpy( &mqtt_cfg, &mqtt_giotc_cfg,
-		// sizeof(esp_mqtt_client_config_t) );
+
 	} else {
 		ESP_LOGW(TAG, "Don't use GIOTC.");
 	}
 
-	printf("JWT TOCKEN %s\n\r", jwt);
-
+	printf("JWT TOCKEN GENERTATED %s\n\r", jwt);
 	*mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
 
 	if (*mqtt_client == NULL) {
 		ESP_LOGE(TAG, "error: mqtt client NULL.");
-		free(jwt);
-		return -1;
+		return ESP_FAIL;
 	}
-
-	// esp_mqtt_client_register_event(*mqtt_client,
-	// ESP_EVENT_ANY_ID,mqtt_event_handler, NULL);
 
 	ret = esp_mqtt_client_start(*mqtt_client);
-	if (jwt != NULL) {
-		free(jwt);
-	}
 
 	return ret;
 }

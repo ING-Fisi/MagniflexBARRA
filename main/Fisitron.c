@@ -41,7 +41,7 @@ void fisitron_mqtt_event_handler(void *handler_args, esp_event_base_t base,
 	int msg_id = 0;
 	switch ((esp_mqtt_event_id_t)event_id) {
 	case MQTT_EVENT_CONNECTED:
-		ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
+		ESP_LOGI(TAG, "FISITRON MQTT_EVENT_CONNECTED");
 		msg_id = esp_mqtt_client_subscribe(client, fisitron_data_topic_sub, 1);
 		set_mqtt_service_state(MQTT_SERV_CONNECTED);
 		break;
@@ -50,7 +50,7 @@ void fisitron_mqtt_event_handler(void *handler_args, esp_event_base_t base,
 		ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
 		break;
 	case MQTT_EVENT_DISCONNECTED:
-		ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
+		ESP_LOGI(TAG, "FISITRON MQTT_EVENT_DISCONNECTED");
 
 		//		if (wifi_connected == true) {
 		//			fisitron_mqtt_app_start();
@@ -61,19 +61,19 @@ void fisitron_mqtt_event_handler(void *handler_args, esp_event_base_t base,
 		break;
 
 	case MQTT_EVENT_SUBSCRIBED:
-		ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
+		ESP_LOGI(TAG, "FISITRON MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
 		// msg_id = esp_mqtt_client_publish(client, "/topic/qos0", "data", 0, 0,
 		// 0);
 		ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
 		break;
 	case MQTT_EVENT_UNSUBSCRIBED:
-		ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
+		ESP_LOGI(TAG, "FISITRON MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
 		break;
 	case MQTT_EVENT_PUBLISHED:
-		ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+		ESP_LOGI(TAG, "FISITRON MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
 		break;
 	case MQTT_EVENT_DATA:
-		ESP_LOGI(TAG, "MQTT_EVENT_DATA");
+		ESP_LOGI(TAG, "FISITRON MQTT_EVENT_DATA");
 		printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
 		printf("DATA=%.*s\r\n", event->data_len, event->data);
 
@@ -134,10 +134,7 @@ void fisitron_mqtt_event_handler(void *handler_args, esp_event_base_t base,
 int send_fisitron_message(char *pub_js) {
 
 	int ret = 0;
-
-	ret = esp_mqtt_client_publish(mqtt_fisitron, fisitron_data_topic, pub_js, 0,
-								  1, 0);
-
+	ret = esp_mqtt_client_publish(mqtt_fisitron, fisitron_data_topic, pub_js, 0,1, 0);
 	return ret;
 }
 

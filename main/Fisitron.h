@@ -8,16 +8,21 @@
 #ifndef MAIN_FISITRON_H_
 #define MAIN_FISITRON_H_
 
+//*********************************************WIFI FISITRON BARRE************************************************* */
+
+#define FISITRON_WIFI_SSID	"FisitronBarre"
+#define FISITRON_WIFI_PSW	"B4rr3M4gn1!"
+//*********************************************MQTT FISICONNECT************************************************* */
 
 #define FISITRON_BROKER_URI	"mqtts://mqtt.fisitron.com:8883"
 #define FISITRON_PROJECT_ID	"magniflex"
 
-#define FISITRON_USER	"Fisitron4Debug!"
-#define FISITRON_PSW	"Fisitron4Debug!"
+#define FISITRON_USER	"Fisitron4SmartDream!"
+#define FISITRON_PSW	"Fisitron4SmartDream!"
 
-#define FISITRON_CLIENT_ID_TEMPLATE				"apps/magniflex/registries/barre/devices/%s"
-#define FISITRON_DATA_TOPIC_TEMPLATE			"/apps/magniflex/registries/barre/devices/%s/events"
-#define FISITRON_DATA_TOPIC_SUB_TEMPLATE		"/apps/magniflex/registries/barre/devices/%s/commands/#"
+#define FISITRON_CLIENT_ID_TEMPLATE				"apps/magniflex/registries/SmartDream/devices/%s"
+#define FISITRON_DATA_TOPIC_TEMPLATE			"/apps/magniflex/registries/SmartDream/devices/%s/events"
+#define FISITRON_DATA_TOPIC_SUB_TEMPLATE		"/apps/magniflex/registries/SmartDream/devices/%s/commands/#"
 
 
 void fisitron_mqtt_app_start(void);
