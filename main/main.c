@@ -37,6 +37,7 @@
 #include "freertos/task.h"
 // #include <cstring>
 #include <stdio.h>
+#include <time.h>
 
 // Custom
 #include "fsntp.h"
@@ -53,10 +54,9 @@
 #include "Fisitron.h"
 #include "ftp.h"
 
-
 //**********************************************************/
 
-#define VERSIONE_FW "1.0.1"
+#define VERSIONE_FW "1.0.4"
 
 /* --------------------- DEFINES ------------------------- *
  * ------------------------------------------------------- */
@@ -79,7 +79,7 @@
 #define GPIO_INPUT_PIN_SEL (1ULL << GPIO_INPUT_IO_0)
 #define ESP_INTR_FLAG_DEFAULT 0
 
-static xQueueHandle gpio_evt_queue = NULL;
+//static xQueueHandle gpio_evt_queue = NULL;
 
 /* --------------------- VARIABLES ----------------------- *
  * ------------------------------------------------------- */
@@ -98,6 +98,7 @@ esp_mqtt_client_config_t mqttcfg;
 
 extern esp_mqtt_client_handle_t mqtt_fisitron;
 extern bool is_ble_conn;
+bool check_ota_inprogress = false;
 
 char ts[50];
 char js[PUBSTR_SIZE];
@@ -137,6 +138,8 @@ size_t privateKeySize;
 #ifdef EN_HEAP_TASK_INFO
 static void esp_dump_per_task_heap_info(void);
 #endif
+
+extern double get_timestamp_from_last_connection(char *buffer, size_t size);
 
 ///////////////////////////////////////////////////////////////////////////////
 // TODO: System initialization:
@@ -320,79 +323,6 @@ void init_magniflex_device(magniflex_reg_t *dev) {
 	}
 }
 
-// void print_mgnflx_regs(magniflex_reg_t *dev) {
-//
-//	// Print enumerated devices on bus.
-//	ESP_LOGI(TAG, " ----------------------------------- \n"
-//				  "Print Magniflex configured registers.\n"
-//				  " ----------------------------------- \n"
-//				  " ''''''''''''''''''''''''''''''''''' \n"
-//				  "Enumereated SNSMENS AFE on bus:");
-//	for (int i = 0; i < dev->cnt_nsns; i++) {
-//		ESP_LOGI(TAG, "snsmens[%d]: %d", i,
-//				 dev->snsmems[i].indx); // Assign I2C bus address.
-//	}
-//
-//	// Default state and data parameter values.
-//	ESP_LOGI(TAG,
-//			 " ''''''''''''''''''''''''''''''''''' \n"
-//			 "Control parameters:\n"
-//			 "data mode: %s\n"
-//			 "presence: %d",
-//			 data_mode_str[dev->data_mode], dev->presence);
-//
-//	ESP_LOGI(TAG, " ''''''''''''''''''''''''''''''''''' \n"
-//				  "Data parameters handling:");
-//	for (int i = 0; i < NPARAM; i++) {
-//		ESP_LOGI(TAG, " ------------------------- ");
-//		ESP_LOGI(TAG, "Parameters[%d]: %s", i, ptyp_str[i]);
-//		ESP_LOGI(TAG, "t_hold: %lld", dev->t_hold[i]);
-//		ESP_LOGI(TAG, "pub_int: %d", dev->pub_int[i]);
-//		ESP_LOGI(TAG, "data_req: %d", dev->data_req[i]);
-//		ESP_LOGI(TAG, "type: %c, sns: %d, rngs: %d, len: %d",
-//				 dev->params[i].type, dev->params[i].val.snssize,
-//				 dev->params[i].val.rangesize,
-//				 (dev->params[i].val.rangesize * dev->params[i].val.snssize));
-//		if (dev->params[i].type == 'f') {
-//			esp_log_buffer_hex_internal(
-//				TAG, dev->params[i].val.fbuf,
-//				(dev->params[i].val.rangesize * dev->params[i].val.snssize) *
-//					sizeof(float),
-//				ESP_LOG_VERBOSE);
-//			//			float *pf =(float*) &(dev->params[i].val.fbuf);
-//			for (int j = 0; j < (dev->params[i].val.rangesize *
-//								 dev->params[i].val.snssize);
-//				 j++) {
-//				ESP_LOGI(TAG, "[%i] %.2f", j, dev->params[i].val.fbuf[j]);
-//			}
-//		} else if (dev->params[i].type == 'i') {
-//			esp_log_buffer_hex_internal(
-//				TAG, dev->params[i].val.ibuf,
-//				(dev->params[i].val.rangesize * dev->params[i].val.snssize) *
-//					sizeof(float),
-//				ESP_LOG_VERBOSE);
-//			//			u32 *pi =(u32*) &(dev->params[i].val.ibuf);
-//			for (int j = 0; j < (dev->params[i].val.rangesize *
-//								 dev->params[i].val.snssize);
-//				 j++) {
-//				ESP_LOGI(TAG, "[%i] %d", j, dev->params[i].val.ibuf[j]);
-//			}
-//			if ((dev->params[i].val.rangesize * dev->params[i].val.snssize ==
-//				 0)) {
-//				ESP_LOGI(TAG, "Components type.");
-//				for (int k = 0; k < 3; k++) {
-//					ESP_LOGI(TAG, "[%i] %d", k, dev->params[i].val.ibuf[k]);
-//				}
-//			}
-//		} else {
-//			ESP_LOGE(TAG, "error: parameter type not recognized.");
-//		}
-//	}
-//
-//	ESP_LOGI(TAG, " ----------------------------------- \n"
-//				  " ----------------------------------- \n");
-// }
-
 // Function that populate data JSON.
 void param_add2_json(param_t *par, char *pname, data_mode_t m, char *s) {
 	u32 nsns = par->val.snssize, rngs = par->val.rangesize;
@@ -508,10 +438,11 @@ int chck_req_periodic_pub(magniflex_reg_t *dev, char *pub_js, char *data_js) {
 			ret = esp_mqtt_client_publish(mqttc, giotc_data_topic, pub_js, 0, 1,
 										  0);
 
-			ret = send_fisitron_message(pub_js);
-			//			ret = esp_mqtt_client_publish(
-			//				mqtt_fisitron, fisitron_data_topic, pub_js, 0, 1,
-			// 0);
+			//			ret = send_fisitron_message(pub_js);
+			//			//			ret = esp_mqtt_client_publish(
+			//			//				mqtt_fisitron, fisitron_data_topic,
+			// pub_js, 0, 1,
+			//			// 0);
 		} else {
 			ESP_LOGW(TAG, "chck_req_periodic_pub skip publish: MQTT client not "
 						  "connected.");
@@ -583,37 +514,6 @@ int state_updt(magniflex_reg_t *dev) {
 
 	return ret;
 }
-
-#ifdef MQTTCMD_DBG
-char *dbg_cmd_js = "{"
-				   "\"data_int\":{"
-				   "\"body_p\":5,"
-				   "\"temp\":5,"
-				   "\"hum\":5,"
-				   "\"mag\":5,"
-				   "\"sleep_t\":5,"
-				   "\"breath_r\":5,"
-				   "\"heart_r\":5,"
-				   "\"good_k\":5,"
-				   "\"temp_a\":5,"
-				   "\"hum_a\":5"
-				   "},"
-				   "\"data_mode\":\"range\","
-				   "\"force_pub\":\"true\","
-				   "\"data_req\":["
-				   "\"body_p\","
-				   "\"temp\","
-				   "\"hum\","
-				   "\"mag\","
-				   "\"sleep_t\","
-				   "\"breath_r\","
-				   "\"heart_r\","
-				   "\"good_k\","
-				   "\"temp_a\":5,"
-				   "\"hum_a\":5"
-				   "]"
-				   "}";
-#endif
 
 void mqtt_cmd_parse(magniflex_reg_t *dev, char *cmd_js) {
 	char buffjs[600];
@@ -716,23 +616,6 @@ void mqtt_cmd_parse(magniflex_reg_t *dev, char *cmd_js) {
 
 	stridx--;								   // To remove last ','
 	stridx += sprintf((buffjs + stridx), "}"); // Close state update JSON.
-
-	// Update state topic.
-#ifndef PUB_DBG
-	ESP_LOGD(TAG, "update state topic %d:\n%s", strlen(buffjs), buffjs);
-#ifdef GIOTC_PUB
-	if ((get_mqtt_service_state() == MQTT_SERV_CONNECTED) ||
-		(get_mqtt_service_state() == MQTT_SERV_SUBCRIBED)) {
-		esp_mqtt_client_publish(mqttc, get_gcpiot_pub_topic_state(), buffjs, 0,
-								1, 0); // Send state update on State topic.
-	} else {
-		ESP_LOGW(TAG,
-				 "mqtt_cmd_parse skip publish: MQTT client not connected.");
-	}
-#endif
-#else
-	ESP_LOGW(TAG, "update state topic %d:\n%s", strlen(buffjs), buffjs);
-#endif
 }
 
 esp_err_t my_mqtt_event_handler(esp_mqtt_event_handle_t event) {
@@ -770,9 +653,6 @@ esp_err_t my_mqtt_event_handler(esp_mqtt_event_handle_t event) {
 
 	case MQTT_EVENT_DATA:
 		ESP_LOGW(TAG, "MQTT_EVENT_DATA");
-		//            ESP_LOGV(TAG,"TOPIC=%.*s\r\n", event->topic_len,
-		//            event->topic); ESP_LOGV(TAG,"DATA=%.*s\r\n",
-		//            event->data_len, event->data);
 		if (strncmp(event->topic, giotc_data_topic_sub,
 					strlen(giotc_data_topic_sub))) {
 			event->data[event->data_len] = 0;
@@ -782,15 +662,27 @@ esp_err_t my_mqtt_event_handler(esp_mqtt_event_handle_t event) {
 
 	case MQTT_EVENT_ERROR:
 		ESP_LOGW(TAG, "MQTT_EVENT_ERROR");
-		//            mqtt_service_state = MQTT_SERV_ERROR;
-		//            realloc_buff(10);
+
 		int mbedtls_err = 0;
 		esp_err_t err = esp_tls_get_and_clear_last_error(
 			(esp_tls_error_handle_t)event->error_handle, &mbedtls_err, NULL);
-		ESP_LOGD(TAG, "Last esp error code: 0x%x", err);
-		ESP_LOGD(TAG, "Last mbedtls failure: 0x%x", mbedtls_err);
+
+		ESP_LOGE(TAG, "Last esp error code: 0x%x", err);
+		ESP_LOGE(TAG, "Last mbedtls failure: 0x%x", mbedtls_err);
+
+		if (mbedtls_err != 0x0000) {
+			ESP_LOGE(TAG,
+					 "Rilevato errore critico 0x7F00 (SSL ALLOC FAILED)\n");
+			ESP_LOGE(TAG, "Heap libero attuale: %u byte. Riavvio in corso...\n",
+					 esp_get_free_heap_size());
+
+			// Opzionale: attendi un istante per permettere la stampa dei log
+			vTaskDelay(pdMS_TO_TICKS(1000));
+			esp_restart();
+		}
 
 		set_mqtt_service_state(MQTT_SERV_ERROR);
+
 		break;
 
 	default:
@@ -801,10 +693,46 @@ esp_err_t my_mqtt_event_handler(esp_mqtt_event_handle_t event) {
 	return ESP_OK;
 }
 
-const char *json_heart_beat =
-	"{\"nome\":\"Mario\",\"cognome\":\"Rossi\",\"eta\":30,\"is_attivo\":true,"
-	"\"hobby\":[\"musica\",\"sport\",\"lettura\"],\"indirizzo\":{\"citta\":"
-	"\"Roma\",\"cap\":\"00100\"},\"note\":null}";
+
+
+void invia_stato_completo(float temp, int umid, int connesso, int presenza) {
+    char json_buffer[512];      // Aumentato per sicurezza
+    char ts_buffer[32];         // Buffer per il timestamp ISO
+    char uptime_buffer[32];     // Buffer per la durata leggibile (Risolve l'errore)
+
+    double second_from_connection =
+        get_timestamp_from_last_connection(ts_buffer, sizeof(ts_buffer));
+        
+    int s = (int)second_from_connection;
+    int giorni  = s / 86400;
+    int ore     = (s % 86400) / 3600;
+    int minuti  = (s % 3600) / 60;
+    int secondi_restanti = s % 60;
+
+    // Formattazione sicura della stringa
+    snprintf(uptime_buffer, sizeof(uptime_buffer), "%dg %02dh %02dm %02ds", 
+             giorni, ore, minuti, secondi_restanti);
+
+    // Costruzione del JSON
+    snprintf(json_buffer, sizeof(json_buffer),
+             "{"
+             "\"timestamp\":\"%s\","
+             "\"firmware_version\":\"%s\","
+             "\"temperatura\":%.1f,"
+             "\"umidita\":%d,"
+             "\"connesso\":%s,"
+             "\"presenza\":%s,"
+             "\"uptime\":\"%s\""
+             "}",
+             ts_buffer, VERSIONE_FW, temp, umid, 
+             connesso ? "true" : "false",
+             presenza ? "true" : "false", 
+             uptime_buffer);
+
+    send_fisitron_message(json_buffer);
+}
+
+
 
 void ctrl_tsk(void *vargs) {
 
@@ -827,13 +755,12 @@ void ctrl_tsk(void *vargs) {
 	mqttcfg.out_buffer_size = 1024; // Riduci se possibile
 	mqttcfg.task_stack = 2 * 4096;
 
-	//};
 	if (mqtt_app_start(&mqttc, &mqttcfg) == ESP_OK) {
 
 		//***************************************************************************//
 		//***************************************************************************//
 		//****************************CTRL
-		//TASK**************************************//
+		// TASK**************************************//
 		//***************************************************************************//
 		//***************************************************************************//
 
@@ -863,67 +790,75 @@ void ctrl_tsk(void *vargs) {
 
 		while (1) {
 
-			if ((get_mqtt_service_state() < MQTT_SERV_CONNECTED)) {
-				if (chck_time_int(&print_heap_tm, 30) ==
-					1) { // DBG: print memory
+			//*****************************************************************************************************************
+			//*/
+			//*************************************solo se l'ota check non è in
+			// progress*****************************************/
+			//*****************************************************************************************************************
+			//*/
 
-					ESP_LOGI(TAG, "free heap: %8u B (NOW), min:%8u B(MIN) ",
-							 esp_get_free_heap_size(),
-							 esp_get_minimum_free_heap_size());
+			if (check_ota_inprogress == false) {
 
-					ESP_LOGI(TAG, "used heap: %8u B (NOW), min: %8u B (MAX)",
-							 used_heap - esp_get_free_heap_size(),
-							 used_heap - esp_get_minimum_free_heap_size());
+				if ((get_mqtt_service_state() < MQTT_SERV_CONNECTED)) {
+					if (chck_time_int(&print_heap_tm, 30) ==
+						1) { // DBG: print memory
 
-					//********************retry of communication process
-					//**************************/
+						ESP_LOGI(TAG, "free heap: %8u B (NOW), min:%8u B(MIN) ",
+								 esp_get_free_heap_size(),
+								 esp_get_minimum_free_heap_size());
 
-					mqtt_app_start(&mqttc, &mqttcfg);
-				}
+						ESP_LOGI(TAG,
+								 "used heap: %8u B (NOW), min: %8u B (MAX)",
+								 used_heap - esp_get_free_heap_size(),
+								 used_heap - esp_get_minimum_free_heap_size());
 
-				vTaskDelay(1000 / portTICK_PERIOD_MS);
-			}
+						//********************retry of communication process
+						//**************************/
 
-			if (ftp_getstate() == E_FTP_STE_CONNECTED) {
+						mqtt_app_start(&mqttc, &mqttcfg);
+					}
 
-				vTaskDelay(20 / portTICK_PERIOD_MS);
-
-			} else {
-
-				float t = 0.0f, h = 0.0f;
-				MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_TEMPERATURE, &t);
-				MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_HUMIDITY, &h);
-
-				curdev.params[HUM_A].val.fbuf[0] = h;
-				curdev.params[TEMP_A].val.fbuf[0] =
-					curdev.params[TEMP].val.fbuf[0]; // t;
-
-				ESP_LOGI(TAG, "Run working tasks. [%f] [%f]", t, h);
-
-				if (curdev.cnt_nsns < 2) {
-					ESP_LOGW(TAG, "no snsmems detected, try enumaration.");
 					vTaskDelay(1000 / portTICK_PERIOD_MS);
-				} else {
-					acq_snsmems_data(&curdev);
-					memset(js, 0, sizeof(js));
-					memset(pjsdata, 0, sizeof(pjsdata));
-					chck_req_periodic_pub(&curdev, js, pjsdata);
 				}
 
-				gpio_set_level(GPIO_OUTPUT_IO_0, 1000);
-				vTaskDelay(20 / portTICK_PERIOD_MS);
-				gpio_set_level(GPIO_OUTPUT_IO_0, 0);
-				vTaskDelay(20 / portTICK_PERIOD_MS);
+				if (ftp_getstate() == E_FTP_STE_CONNECTED) {
 
-				int ret = send_fisitron_message(json_heart_beat);
+					vTaskDelay(20 / portTICK_PERIOD_MS);
+
+				} else {
+
+					float t = 0.0f, h = 0.0f;
+					MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_TEMPERATURE,
+											 &t);
+					MEMS_ENV_SENSOR_GetValue(MEMS_HTS221_0, ENV_HUMIDITY, &h);
+
+					curdev.params[HUM_A].val.fbuf[0] = h;
+					curdev.params[TEMP_A].val.fbuf[0] =
+						curdev.params[TEMP].val.fbuf[0]; // t;
+
+					ESP_LOGI(TAG, "Run working tasks. [%f] [%f]", t, h);
+
+					if (curdev.cnt_nsns < 2) {
+						ESP_LOGW(TAG, "no snsmems detected, try enumaration.");
+						vTaskDelay(1000 / portTICK_PERIOD_MS);
+					} else {
+						acq_snsmems_data(&curdev);
+						memset(js, 0, sizeof(js));
+						memset(pjsdata, 0, sizeof(pjsdata));
+						chck_req_periodic_pub(&curdev, js, pjsdata);
+					}
+
+					gpio_set_level(GPIO_OUTPUT_IO_0, 1000);
+					vTaskDelay(20 / portTICK_PERIOD_MS);
+					gpio_set_level(GPIO_OUTPUT_IO_0, 0);
+					vTaskDelay(20 / portTICK_PERIOD_MS);
+
+					invia_stato_completo(
+						t, h, get_mqtt_service_state() == MQTT_SERV_CONNECTED,
+						curdev.presence);
+				}
 			}
 		}
-
-		//***************************************************************************//
-		//***************************************************************************//
-		//***************************************************************************//
-		//***************************************************************************//
-		//***************************************************************************//
 	}
 
 	vTaskDelete(NULL);
@@ -993,16 +928,10 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
 //*********************************************************//
 //***************************************************************************************************************************//
 
-// static void IRAM_ATTR gpio_isr_handler(void* arg)
-//{
-//	uint32_t gpio_num = (uint32_t) arg;
-//	xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
-// }
-
 int counter_reset = 0;
 
 static void gpio_task_example(void *arg) {
-	uint32_t io_num;
+	//uint32_t io_num;
 	for (;;) {
 
 		int reset = gpio_get_level(GPIO_INPUT_IO_0);
@@ -1043,37 +972,6 @@ static void gpio_task_example(void *arg) {
 		}
 
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-		//		if(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) { //
-		//@suppress("Symbol is not resolved")
-		//
-		//			switch ( io_num )
-		//			{
-		//			case RESET_GPIO: {
-		//
-		//				while(1)
-		//				{
-		//
-		//					ESP_LOGI(TAG,"RESET PARAMETRI --> REBOOT");
-		//
-		//				}
-		//
-		//				//float tmpf[MAX_NSNS] = {0};
-		//				//memset(tmpf,0,sizeof(tmpf));
-		//				//snsmems_nvs_save_thrsh(tmpf, MAX_NSNS);
-		//				//ESP_LOGI(TAG,"Erase NVS flash partition.");
-		//				nvs_flash_erase();
-		//				//ESP_LOGI(TAG,"Reboot system.  CAZZZO");
-		//				esp_restart();
-		//			} break;
-		//
-		//			default:
-		//				break;
-		//			}
-		//
-		//			//printf("GPIO[%d] intr, val: %d\n", io_num,
-		// gpio_get_level(io_num));
-		//		}
 	}
 }
 
@@ -1104,48 +1002,10 @@ void gpio_init(void) {
 	// configure GPIO with the given settings
 	gpio_config(&io_conf);
 
-	//	//interrupt of rising edge
-	//	io_conf.intr_type = GPIO_INTR_POSEDGE;
-	//	//bit mask of the pins, use GPIO4/5 here
-	//	io_conf.pin_bit_mask = GPIO_INPUT_PIN_SEL;
-	//	//set as input mode
-	//	io_conf.mode = GPIO_MODE_INPUT;
-	//	//enable pull-up mode
-	//	io_conf.pull_up_en = 1;
-	//	gpio_config(&io_conf);
-
-	// change gpio intrrupt type for one pin
-	// gpio_set_intr_type(GPIO_INPUT_IO_0, GPIO_INTR_NEGEDGE);
-
-	// create a queue to handle gpio event from isr
-	// gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
-	// start gpio task
 	xTaskCreate(gpio_task_example, "gpio_task_example", 2048, NULL, 10, NULL);
-
-	// install gpio isr service
-	// gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
-	// hook isr handler for specific gpio pin
-	// gpio_isr_handler_add(GPIO_INPUT_IO_0, gpio_isr_handler, (void*)
-	// GPIO_INPUT_IO_0); hook isr handler for specific gpio pin
-	// gpio_isr_handler_add(GPIO_INPUT_IO_1, gpio_isr_handler, (void*)
-	// GPIO_INPUT_IO_1);
-
-	// remove isr handler for gpio number.
-	// gpio_isr_handler_remove(GPIO_INPUT_IO_0);
-	// hook isr handler for specific gpio pin again
-	// gpio_isr_handler_add(GPIO_INPUT_IO_0, gpio_isr_handler, (void*)
-	// GPIO_INPUT_IO_0);
 
 	printf("Minimum free heap size: %d bytes\n",
 		   esp_get_minimum_free_heap_size());
-
-	//    int cnt = 0;
-	//    while(1) {
-	//        printf("cnt: %d\n", cnt++);
-	//        vTaskDelay(1000 / portTICK_RATE_MS);
-	//        gpio_set_level(GPIO_OUTPUT_IO_0, cnt % 2);
-	//        gpio_set_level(GPIO_OUTPUT_IO_1, cnt % 2);
-	//    }
 }
 
 //***************************************************************************************************************************//
@@ -1153,7 +1013,6 @@ void gpio_init(void) {
 //*********************************************************//
 //***************************************************************************************************************************//
 //
-// #define MAX_HTTP_RECV_BUFFER 512
 #define MAX_HTTP_OUTPUT_BUFFER 128
 
 static void ota_request(char *output_buffer, int buffer_len) {
@@ -1203,11 +1062,7 @@ static void ota_request(char *output_buffer, int buffer_len) {
 
 void ota_check(void) {
 
-	// char output_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0};
-	// ota_request(output_buffer, MAX_HTTP_OUTPUT_BUFFER);
-
-	// if (strcmp(output_buffer, fw_ver_str) != 0) {
-	// ESP_LOGI(TAG, "%s", output_buffer);
+	check_ota_inprogress = true;
 
 	esp_http_client_config_t config_ota = {
 		.url =
@@ -1219,12 +1074,29 @@ void ota_check(void) {
 
 	esp_err_t retur = esp_https_ota(&config_ota);
 	if (retur == ESP_OK) {
-		int ret = send_fisitron_message("FIRMWARE UPGRADE COMPLETED");
+		send_fisitron_message("FIRMWARE UPGRADE COMPLETED");
+
+		gpio_set_level(GPIO_OUTPUT_IO_0, 1000);
+		vTaskDelay(500 / portTICK_PERIOD_MS);
+		gpio_set_level(GPIO_OUTPUT_IO_0, 0);
+		vTaskDelay(500 / portTICK_PERIOD_MS);
+		gpio_set_level(GPIO_OUTPUT_IO_0, 1000);
+		vTaskDelay(500 / portTICK_PERIOD_MS);
+		gpio_set_level(GPIO_OUTPUT_IO_0, 0);
+		vTaskDelay(500 / portTICK_PERIOD_MS);
+		gpio_set_level(GPIO_OUTPUT_IO_0, 1000);
+		vTaskDelay(500 / portTICK_PERIOD_MS);
+		gpio_set_level(GPIO_OUTPUT_IO_0, 0);
+		vTaskDelay(500 / portTICK_PERIOD_MS);
+
 		esp_restart();
 	} else {
-		int ret = send_fisitron_message("FIRMWARE UPGRADE FAILED");
+		send_fisitron_message("FIRMWARE UPGRADE FAILED");
 		ESP_LOGE(TAG, "Firmware upgrade failed");
 	}
+
+	check_ota_inprogress = false;
+
 	//}
 }
 
@@ -1312,7 +1184,7 @@ void app_main(void) {
 
 	/* Main application initial chip and system information  *
 	 * ----------------------------------------------------- */
-	ESP_LOGI(TAG, "Startup..");
+	ESP_LOGI(TAG, "Startup.. VERSIONE FW %s", VERSIONE_FW);
 	ESP_LOGI(TAG, "Free memory: %d bytes", esp_get_free_heap_size());
 	ESP_LOGI(TAG, "IDF version: %s", esp_get_idf_version());
 
@@ -1328,7 +1200,7 @@ void app_main(void) {
 	ESP_ERROR_CHECK(err);
 
 	char *partition_label = "storage";
-	esp_err_t ret = mountLITTLEFS(partition_label, MOUNT_POINT);
+	mountLITTLEFS(partition_label, MOUNT_POINT);
 	memset(private_key_pem, 0, 2000 * sizeof(uint8_t));
 
 	ESP_LOGI(TAG, "Reading file");
@@ -1429,38 +1301,11 @@ void app_main(void) {
 		nvs_close(my_handle);
 	}
 
-	//	// 3. CONTROLLO PRIMO AVVIO DOPO OTA (Tramite OTA State)
-	//	const esp_partition_t *running = esp_ota_get_running_partition();
-	//	esp_ota_img_states_t ota_state;
-	//
-	//	if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK) {
-	//		if (ota_state == ESP_OTA_IMG_PENDING_VERIFY) {
-	//			ESP_LOGW(TAG, "PRIMO AVVIO DOPO OTA: Nuova versione in prova");
-	//
-	//			/*
-	//			   Qui inserisci i tuoi test di autodiagnostica (es. connessione
-	//			   Wi-Fi). Se i test falliscono e riavvii senza confermare,
-	// l'ESP 			   farà rollback.
-	//			*/
-	//
-	//			bool health_check = true; // Sostituisci con logica reale
-	//			if (health_check) {
-	//				ESP_LOGI(TAG, "Salute sistema OK. Confermo il nuovo
-	// firmware."); 				esp_ota_mark_app_valid_cancel_rollback();
-	// } else { 				ESP_LOGE(TAG, "Salute sistema FALLITA. Riavvio e
-	// rollback..."); esp_restart();
-	//			}
-	//		}
-	//	}
-
 	//***************************************************************************************************************************//
 	//******************************************************** WIFI INIT
 	//********************************************************//
 	//***************************************************************************************************************************//
-	// char custom_ssid[30]={"Fisitron Wireless"};
-	////char custom_password[30] ={"055319282055"};
 
-	//**********************************************//
 	ESP_ERROR_CHECK(esp_netif_init());
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
 	esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
@@ -1508,30 +1353,6 @@ void app_main(void) {
 	ESP_ERROR_CHECK(esp_wifi_start());
 
 	//***************************************************************************************************************************//
-
-#ifdef TEST_SNSMEMS
-	// SENSMEMS Initialization and enumeration.
-	int snsnum = snsmems_initilaize(curdev.snsmems);
-	ESP_LOGI(TAG, "///////////////////// TEST SNSMEMS /////////////////////");
-	ESP_LOGI(TAG, "");
-	ESP_LOGI(TAG, "SNSMEMS detected: %d.", snsnum);
-	ESP_LOGI(TAG, "");
-	u32 buf;
-	for (int i = 0; i < snsnum; i++) {
-		ESP_LOGI(TAG, "-------------------- address: %d.", curdev.snsmems[i]);
-		if (snsmems_rd(curdev.snsmems[i], SNSMEMS_REG(Status_REG), (u8 *)&buf,
-					   REG_LEN) == ESP_OK) {
-			snsmems_print_stat(buf);
-			snsmems_print_ver(curdev.snsmems[i]);
-		}
-		ESP_LOGI(TAG, "");
-		//		ESP_LOGI(TAG,"sns_addr[%d]: %02x(%d)", i, curdev.snsmems[i],
-		// curdev.snsmems[i]);
-	}
-	//	snsmems_en_cmd(0);
-	return;
-#endif
-
 	//***************************************************************************************************************************//
 	//******************************************************* MAGNI INIT
 	//********************************************************//
@@ -1614,182 +1435,3 @@ void app_main(void) {
 
 	vTaskDelete(NULL);
 }
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////
-#ifdef DBG_STATS
-/* FreeRTOS Real Time Stats Example
-
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
- */
-
-#include "esp_err.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
-#include <stdio.h>
-#include <stdlib.h>
-
-#define NUM_OF_SPIN_TASKS 6
-#define SPIN_ITER                                                              \
-	500000 // Actual CPU cycles used will depend on compiler optimization
-#define SPIN_TASK_PRIO 2
-#define STATS_TASK_PRIO 3
-#define STATS_TICKS pdMS_TO_TICKS(1000)
-#define ARRAY_SIZE_OFFSET                                                      \
-	5 // Increase this if print_real_time_stats returns ESP_ERR_INVALID_SIZE
-
-static char task_names[NUM_OF_SPIN_TASKS][configMAX_TASK_NAME_LEN];
-static SemaphoreHandle_t sync_spin_task;
-static SemaphoreHandle_t sync_stats_task;
-
-/**
- * @brief   Function to print the CPU usage of tasks over a given duration.
- *
- * This function will measure and print the CPU usage of tasks over a specified
- * number of ticks (i.e. real time stats). This is implemented by simply calling
- * uxTaskGetSystemState() twice separated by a delay, then calculating the
- * differences of task run times before and after the delay.
- *
- * @note    If any tasks are added or removed during the delay, the stats of
- *          those tasks will not be printed.
- * @note    This function should be called from a high priority task to minimize
- *          inaccuracies with delays.
- * @note    When running in dual core mode, each core will correspond to 50% of
- *          the run time.
- *
- * @param   xTicksToWait    Period of stats measurement
- *
- * @return
- *  - ESP_OK                Success
- *  - ESP_ERR_NO_MEM        Insufficient memory to allocated internal arrays
- *  - ESP_ERR_INVALID_SIZE  Insufficient array size for uxTaskGetSystemState.
- * Trying increasing ARRAY_SIZE_OFFSET
- *  - ESP_ERR_INVALID_STATE Delay duration too short
- */
-static esp_err_t print_real_time_stats(TickType_t xTicksToWait) {
-	TaskStatus_t *start_array = NULL, *end_array = NULL;
-	UBaseType_t start_array_size, end_array_size;
-	uint32_t start_run_time, end_run_time;
-	esp_err_t ret;
-
-	// Allocate array to store current task states
-	start_array_size = uxTaskGetNumberOfTasks() + ARRAY_SIZE_OFFSET;
-	start_array = malloc(sizeof(TaskStatus_t) * start_array_size);
-	if (start_array == NULL) {
-		ret = ESP_ERR_NO_MEM;
-		goto exit;
-	}
-	// Get current task states
-	start_array_size =
-		uxTaskGetSystemState(start_array, start_array_size, &start_run_time);
-	if (start_array_size == 0) {
-		ret = ESP_ERR_INVALID_SIZE;
-		goto exit;
-	}
-
-	vTaskDelay(xTicksToWait);
-
-	// Allocate array to store tasks states post delay
-	end_array_size = uxTaskGetNumberOfTasks() + ARRAY_SIZE_OFFSET;
-	end_array = malloc(sizeof(TaskStatus_t) * end_array_size);
-	if (end_array == NULL) {
-		ret = ESP_ERR_NO_MEM;
-		goto exit;
-	}
-	// Get post delay task states
-	end_array_size =
-		uxTaskGetSystemState(end_array, end_array_size, &end_run_time);
-	if (end_array_size == 0) {
-		ret = ESP_ERR_INVALID_SIZE;
-		goto exit;
-	}
-
-	// Calculate total_elapsed_time in units of run time stats clock period.
-	uint32_t total_elapsed_time = (end_run_time - start_run_time);
-	if (total_elapsed_time == 0) {
-		ret = ESP_ERR_INVALID_STATE;
-		goto exit;
-	}
-
-	printf("| Task | Run Time | Percentage\n");
-	// Match each task in start_array to those in the end_array
-	for (int i = 0; i < start_array_size; i++) {
-		int k = -1;
-		for (int j = 0; j < end_array_size; j++) {
-			if (start_array[i].xHandle == end_array[j].xHandle) {
-				k = j;
-				// Mark that task have been matched by overwriting their handles
-				start_array[i].xHandle = NULL;
-				end_array[j].xHandle = NULL;
-				break;
-			}
-		}
-		// Check if matching task found
-		if (k >= 0) {
-			uint32_t task_elapsed_time =
-				end_array[k].ulRunTimeCounter - start_array[i].ulRunTimeCounter;
-			uint32_t percentage_time =
-				(task_elapsed_time * 100UL) /
-				(total_elapsed_time * portNUM_PROCESSORS);
-			printf("| %s | %d | %d%%\n", start_array[i].pcTaskName,
-				   task_elapsed_time, percentage_time);
-		}
-	}
-
-	// Print unmatched tasks
-	for (int i = 0; i < start_array_size; i++) {
-		if (start_array[i].xHandle != NULL) {
-			printf("| %s | Deleted\n", start_array[i].pcTaskName);
-		}
-	}
-	for (int i = 0; i < end_array_size; i++) {
-		if (end_array[i].xHandle != NULL) {
-			printf("| %s | Created\n", end_array[i].pcTaskName);
-		}
-	}
-	ret = ESP_OK;
-
-exit: // Common return path
-	free(start_array);
-	free(end_array);
-	return ret;
-}
-
-static void spin_task(void *arg) {
-	xSemaphoreTake(sync_spin_task, portMAX_DELAY);
-	while (1) {
-		// Consume CPU cycles
-		for (int i = 0; i < SPIN_ITER; i++) {
-			__asm__ __volatile__("NOP");
-		}
-		vTaskDelay(pdMS_TO_TICKS(100));
-	}
-}
-
-static void stats_task(void *arg) {
-	xSemaphoreTake(sync_stats_task, portMAX_DELAY);
-
-	// Start all the spin tasks
-	for (int i = 0; i < NUM_OF_SPIN_TASKS; i++) {
-		xSemaphoreGive(sync_spin_task);
-	}
-
-	// Print real time stats periodically
-	while (1) {
-		printf("\n\nGetting real time stats over %d ticks\n", STATS_TICKS);
-		if (print_real_time_stats(STATS_TICKS) == ESP_OK) {
-			printf("Real time stats obtained\n");
-		} else {
-			printf("Error getting real time stats\n");
-		}
-		vTaskDelay(pdMS_TO_TICKS(1000));
-	}
-}
-#endif
-///////////////////////////////////////////////////////////
-//*********************************************************************************************//

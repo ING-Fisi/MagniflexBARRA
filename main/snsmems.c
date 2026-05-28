@@ -17,8 +17,6 @@
 #include "mqtt.h"
 #include "snsmems.h"
 
-
-
 /* --------------------- DEFINES -------------------------- *
  * -------------------------------------------------------- */
 typedef struct {
@@ -70,11 +68,9 @@ bpm_data_t bpm[NSNS][6];
 
 int magindx = 0; // Index to Mag board.
 
-
 /**********************************************************/
 unsigned int presenceTimeoutIdx = 0; // max=4.294.967.295
 /**********************************************************/
-
 
 #ifdef USE_PERIOD_CIRCBUF
 // Circular buffers.
@@ -469,16 +465,26 @@ void acq_snsmems_env_data(magniflex_reg_t *dev) {
 		if ((dev->prsnc_trsh[i * 2] == 0.0f) ||
 			(tare_request == true)) { // Not initialized.
 
-			tare_request = false;
+			ESP_LOGW(
+				TAG,
+				"//********************************TARA "
+				"ESEGUITA**************************************************//");
+
+			
 			dev->prsnc_trsh[i * 2] = angle[i] - PRESENCE_THRESH;
 			dev->prsnc_trsh[i * 2 + 1] = angle[i] + PRESENCE_THRESH;
 			ESP_LOGW(TAG, "Save threshold values [%.3f,%.3f].",
 					 angle[i] - PRESENCE_THRESH, angle[i] + PRESENCE_THRESH);
-			//					dev->prsnc_trsh[i*2],
-			// dev->prsnc_trsh[i*2+1]);
+
 			snsmems_nvs_save_thrsh(dev->prsnc_trsh, MAX_NSNS * 2);
 		}
 	}
+	
+	
+	if(tare_request == true)
+		tare_request = false;
+	
+
 
 	dev->params[TEMP].val.fbuf[0] = tmp_temp;
 	ESP_LOGW(TAG, "temp: %.2f", dev->params[TEMP].val.fbuf[0]);
@@ -543,46 +549,43 @@ void acq_snsmems_env_data(magniflex_reg_t *dev) {
 				ESP_LOGW(TAG, "Presence not detected, reset time.");
 			}
 		}
-		
-		
+
 		/*************************************************************************************/
-		if(dev->presence==1){
+		if (dev->presence == 1) {
 			presenceTimeoutIdx++; // max=4.294.967.295
-			
-			if(presenceTimeoutIdx==3){
-				ESP_LOGI(TAG, "TIMEOUT PRESENZA: presenceTimeoutIdx=%d", presenceTimeoutIdx);				
-				for( int i = 0; i < dev->cnt_nsns; i++ ){
-					//tare_request = false;
+
+			if (presenceTimeoutIdx == 3) {
+				ESP_LOGI(TAG, "TIMEOUT PRESENZA: presenceTimeoutIdx=%d",
+						 presenceTimeoutIdx);
+				for (int i = 0; i < dev->cnt_nsns; i++) {
+					// tare_request = false;
 					dev->prsnc_trsh[i * 2] = angle[i] - PRESENCE_THRESH;
 					dev->prsnc_trsh[i * 2 + 1] = angle[i] + PRESENCE_THRESH;
 					ESP_LOGW(TAG, "Save New Threshold Values [%.3f,%.3f].",
-							 angle[i] - PRESENCE_THRESH, angle[i] + PRESENCE_THRESH);
-				
+							 angle[i] - PRESENCE_THRESH,
+							 angle[i] + PRESENCE_THRESH);
+
 					snsmems_nvs_save_thrsh(dev->prsnc_trsh, MAX_NSNS * 2);
-					
-					presenceTimeoutIdx=0;
-				}	
+
+					presenceTimeoutIdx = 0;
+				}
 			}
 		}
-		
-		
-		if(dev->presence == 0)
-		{
-			
+
+		if (dev->presence == 0) {
+
 			ESP_LOGW(TAG, "\n!!!!!!!! SNSMEMS DEV->PRESENCE=0 !!!!!!!!\n");
-			
+
 			dev->params[HEART_R].val.fbuf[0] = 0;
 			dev->params[HEART_R].val.fbuf[1] = 0;
 			dev->params[HEART_R].val.fbuf[2] = 0;
-			
+
 			dev->params[BREATH_R].val.fbuf[0] = 0;
 			dev->params[BREATH_R].val.fbuf[1] = 0;
 			dev->params[BREATH_R].val.fbuf[2] = 0;
 		}
 		/*************************************************************************************/
-		
 	}
-	
 }
 
 int get_periods_data(magniflex_reg_t *dev, int i, uint16_t *buf, int len,
@@ -1059,17 +1062,15 @@ int acq_snsmems_data(magniflex_reg_t *dev) {
 	}
 	dev->params[BREATH_R].val.fbuf[1] =
 		(best_bpm.avg / (5 + rand_int_decimal(2, 1))); // Assign AVG.
-		
-		
-	if(dev->presence == 0)
-	{
-		
+
+	if (dev->presence == 0) {
+
 		ESP_LOGW(TAG, "\n!!!!!!!! SNSMEMS DEV->PRESENCE=0 !!!!!!!!\n");
-		
+
 		dev->params[HEART_R].val.fbuf[0] = 0;
 		dev->params[HEART_R].val.fbuf[1] = 0;
 		dev->params[HEART_R].val.fbuf[2] = 0;
-		
+
 		dev->params[BREATH_R].val.fbuf[0] = 0;
 		dev->params[BREATH_R].val.fbuf[1] = 0;
 		dev->params[BREATH_R].val.fbuf[2] = 0;

@@ -82,6 +82,7 @@ int xgiotc_gen_JWT(char *jwtstr, uint32_t len, uint32_t exp_time_s) {
     int rc = mbedtls_pk_parse_key(&pk_context, private_key_pem, privateKeySize, NULL, 0);
     if (rc != 0) {
         ESP_LOGE(TAG,"Failed to mbedtls_pk_parse_key: %d (-0x%x): %s\n", rc, -rc, mbedtlsError(rc));
+        mbedtls_pk_free(&pk_context);
         return -1;
     }
 
@@ -91,6 +92,7 @@ int xgiotc_gen_JWT(char *jwtstr, uint32_t len, uint32_t exp_time_s) {
     rc = mbedtls_md(mbedtls_md_info_from_type(MBEDTLS_MD_SHA256), headerAndPayload, strlen((char*)headerAndPayload), digest);
     if (rc != 0) {
     	ESP_LOGE(TAG,"Failed to mbedtls_md: %d (-0x%x): %s\n", rc, -rc, mbedtlsError(rc));
+    	mbedtls_pk_free(&pk_context);
         return -1;
     }
 
@@ -98,6 +100,7 @@ int xgiotc_gen_JWT(char *jwtstr, uint32_t len, uint32_t exp_time_s) {
     rc = mbedtls_pk_sign(&pk_context, MBEDTLS_MD_SHA256, digest, sizeof(digest), oBuf, &retSize, NULL, NULL);
     if (rc != 0) {
         ESP_LOGE(TAG,"Failed to mbedtls_pk_sign: %d (-0x%x): %s\n", rc, -rc, mbedtlsError(rc));
+        mbedtls_pk_free(&pk_context);
         return -1;
     }
 
@@ -108,6 +111,7 @@ int xgiotc_gen_JWT(char *jwtstr, uint32_t len, uint32_t exp_time_s) {
     int rqlen = 0;
     if ( (rqlen = (strlen((char*)headerAndPayload) + 1 + strlen((char*)base64Signature) + 1)) >= len ) {
     	ESP_LOGE(TAG,"error: too short external JWT buffer, needed: %d, given: %d.", rqlen, len);
+    	mbedtls_pk_free(&pk_context);
         return -1;
     }
     sprintf(jwtstr, "%s.%s", headerAndPayload, base64Signature);

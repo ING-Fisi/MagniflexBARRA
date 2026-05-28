@@ -14,6 +14,7 @@
 #include "mqtt.h"
 
 #include <json_parser.h>
+#include <time.h>
 
 static const char *TAG = "FISITRON_DEBUG";
 
@@ -25,6 +26,36 @@ char fisitron_data_topic_sub[100];
 extern char macstr[20];
 extern bool wifi_connected;
 extern bool tare_request;
+time_t fisitron_connection_time;
+
+
+void get_fisitron_connection_time(void) {
+
+	// Ottiene il tempo corrente (secondi dall'epoca Unix)
+	time(&fisitron_connection_time);
+}
+
+
+
+double get_timestamp_from_last_connection(char *buffer, size_t size) {
+	time_t now;
+	struct tm timeinfo;
+
+	// Ottiene il tempo corrente (secondi dall'epoca Unix)
+	time(&now);
+	double secondi = difftime(now, fisitron_connection_time);
+
+	// Converte in struttura locale (configura TZ se necessario)
+	localtime_r(&now, &timeinfo);
+
+	// Formatta la stringa (es: 2023-10-27 14:30:05)
+	strftime(buffer, size, "%Y-%m-%dT%H:%M:%S", &timeinfo);
+	
+	
+	return secondi;
+}
+
+
 
 static void log_error_if_nonzero(const char *message, int error_code) {
 	if (error_code != 0) {
@@ -42,6 +73,9 @@ void fisitron_mqtt_event_handler(void *handler_args, esp_event_base_t base,
 	switch ((esp_mqtt_event_id_t)event_id) {
 	case MQTT_EVENT_CONNECTED:
 		ESP_LOGI(TAG, "FISITRON MQTT_EVENT_CONNECTED");
+		
+		get_fisitron_connection_time();
+		
 		msg_id = esp_mqtt_client_subscribe(client, fisitron_data_topic_sub, 1);
 		set_mqtt_service_state(MQTT_SERV_CONNECTED);
 		break;
@@ -92,19 +126,19 @@ void fisitron_mqtt_event_handler(void *handler_args, esp_event_base_t base,
 //			if (json_obj_get_int(&jctx, "int_val", &int_val) == OS_SUCCESS)
 //				printf("int_val %d\n", int_val);
 
-			if (strncmp(event->data, "RESET_BARRA", event->data_len) == 0) {
+			if (strncmp(event->data, "{\"reset\":\"RESET_BARRA\"}", event->data_len) == 0) {
 				ESP_LOGI(TAG, "COMMAND_RESET");
 				int ret = send_fisitron_message("RESET_BARRA COMMAND RECEIVED");
 				esp_restart();
 			}
 
 			if (strncmp(event->data, "TARA_BARRA", event->data_len) == 0) {
-				ESP_LOGI(TAG, "COMMAND_TARA");
+				ESP_LOGI(TAG, "{\"tara\":\"TARA_BARRA\"}");
 				int ret = send_fisitron_message("TARA_BARRA COMMAND RECEIVED");
 				tare_request = true;
 			}
 
-			if (strncmp(event->data, "UPGRADE_BARRA", event->data_len) == 0) {
+			if (strncmp(event->data, "{\"upgrade\":\"UPGRADE_BARRA\"}", event->data_len) == 0) {
 				ESP_LOGI(TAG, "UPGRADE_BARRA");
 				int ret = send_fisitron_message("UPGRADE_BARRA COMMAND RECEIVED");
 				ota_check();
