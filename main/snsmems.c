@@ -11,7 +11,7 @@
 #include "esp_err.h"
 #include "nvs_flash.h"
 // Custom
-#include "gcpjwt.h"
+//#include "gcpjwt.h"
 #include "i2c-driver.h"
 #include "main.h"
 #include "mqtt.h"

@@ -22,6 +22,11 @@ typedef enum mqtt_servicve_state {
 
 
 
+#define GCPIOT_BROKER_URI	"mqtts://e4829c0ea999493d9bc2478bf8bf69d1.s1.eu.hivemq.cloud:8883"
+#define DATA_TOPIC_TEMPLATE	"/devices/%s/telemetry"
+#define MQTT_USERNAME "smartdream_broker"
+#define MQTT_PASSWORD "Nicco12Mqtt"
+
 /* --------------------- VARIABLES ----------------------- *
  * ------------------------------------------------------- */
 

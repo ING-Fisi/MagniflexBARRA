@@ -9,7 +9,7 @@
 #include "freertos/FreeRTOS.h"
 #include "mqtt_client.h"
 // Custom
-#include "gcpjwt.h"
+//#include "gcpjwt.h"
 #include "mqtt.h"
 #include "sdkconfig.h"
 
@@ -24,9 +24,7 @@ static const char *TAG = "MQTT CLOUD";
 char device_path[200];
 mqtt_serv_state_t mqtt_service_state = 0; // state holder.
 
-char giotc_cfg_dev_id[50];
 char giotc_data_topic[50];
-char giotc_data_topic_sub[50];
 
 
 #define JWT_SIZE 1000
@@ -50,16 +48,12 @@ esp_err_t mqtt_app_start(esp_mqtt_client_handle_t *mqtt_client,
 	memset(jwt,0,JWT_SIZE);
 	if (strcmp(mqtt_ext_cfg->uri, GCPIOT_BROKER_URI) == 0)
 	{ 
-		// JWT ****************************************************//
-		if (xgiotc_gen_JWT(jwt, JWT_SIZE, 3600) < 0) {
-			return ESP_FAIL;
-		}
 
 		mqtt_cfg.uri = GCPIOT_BROKER_URI;
-		mqtt_cfg.client_id = giotc_cfg_dev_id;
-		mqtt_cfg.cert_pem = (const char *)roots_pem_start;
-		mqtt_cfg.username = "device";
-		mqtt_cfg.password = (const char *)jwt;
+		//mqtt_cfg.client_id = ;
+		//mqtt_cfg.cert_pem = (const char *)roots_pem_start;
+		mqtt_cfg.username = MQTT_USERNAME;
+		mqtt_cfg.password = MQTT_PASSWORD;
 
 	} else {
 		ESP_LOGW(TAG, "Don't use GIOTC.");

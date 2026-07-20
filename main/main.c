@@ -42,7 +42,7 @@
 // Custom
 #include "fsntp.h"
 #include "gble.h"
-#include "gcpjwt.h"
+//#include "gcpjwt.h"
 #include "i2c-driver.h"
 #include "jsn.h"
 #include "main.h"
@@ -126,9 +126,9 @@ magniflex_reg_t curdev; // Main device register structure.
 
 char macstr[20];
 
-extern char giotc_cfg_dev_id[500];
+//extern char giotc_cfg_dev_id[500];
 extern char giotc_data_topic[500];
-extern char giotc_data_topic_sub[500];
+//extern char giotc_data_topic_sub[500];
 
 uint8_t private_key_pem[2000];
 size_t privateKeySize;
@@ -479,41 +479,41 @@ void dbg_sim_data(magniflex_reg_t *dev) {
 	dev->params[HUM_A].val.fbuf[0] = (50.0f + rand_int_decimal(10, 1));
 }
 
-int state_updt(magniflex_reg_t *dev) {
-	int ret = 0;
-	char jsstr[1000];
-
-	jsn_add_key(jsstr, "afe_id");
-	jsn_set_int_key(jsstr, (int *)&dev->snsmems, dev->cnt_nsns, 1, 1, 1);
-
-	jsn_add_key(jsstr, "data_mode");
-	jsn_set_str_key(jsstr, data_mode_str[dev->data_mode]);
-
-	jsn_add_array(jsstr, "data_int");
-	for (int i = 0; i < NPARAM; i++) {
-		jsn_add_obj(jsstr, "");
-		jsn_add_key(jsstr, "type");
-		jsn_set_str_key(jsstr, ptyp_str[i]);
-		jsn_add_key(jsstr, "int");
-		jsn_set_int_key(jsstr, (int *)&dev->pub_int[i], 1, 1, 1, 1);
-		jsn_cls(jsstr);
-	}
-	jsn_array_cls(jsstr);
-	jsn_cls(jsstr);
-
-	ESP_LOGI(TAG, "state publish %d:\n%s", strlen(jsstr), jsstr);
-
-	if ((get_mqtt_service_state() == MQTT_SERV_CONNECTED) ||
-		(get_mqtt_service_state() == MQTT_SERV_SUBCRIBED)) {
-		return esp_mqtt_client_publish(mqttc, get_gcpiot_pub_topic_state(),
-									   "{\"ciao\":\"ciaoval\"}", 0, 1, 0);
-	} else {
-		ESP_LOGI(TAG, "state_updt skip publish: MQTT client not connected.");
-		return -1;
-	}
-
-	return ret;
-}
+//int state_updt(magniflex_reg_t *dev) {
+//	int ret = 0;
+//	char jsstr[1000];
+//
+//	jsn_add_key(jsstr, "afe_id");
+//	jsn_set_int_key(jsstr, (int *)&dev->snsmems, dev->cnt_nsns, 1, 1, 1);
+//
+//	jsn_add_key(jsstr, "data_mode");
+//	jsn_set_str_key(jsstr, data_mode_str[dev->data_mode]);
+//
+//	jsn_add_array(jsstr, "data_int");
+//	for (int i = 0; i < NPARAM; i++) {
+//		jsn_add_obj(jsstr, "");
+//		jsn_add_key(jsstr, "type");
+//		jsn_set_str_key(jsstr, ptyp_str[i]);
+//		jsn_add_key(jsstr, "int");
+//		jsn_set_int_key(jsstr, (int *)&dev->pub_int[i], 1, 1, 1, 1);
+//		jsn_cls(jsstr);
+//	}
+//	jsn_array_cls(jsstr);
+//	jsn_cls(jsstr);
+//
+//	ESP_LOGI(TAG, "state publish %d:\n%s", strlen(jsstr), jsstr);
+//
+//	if ((get_mqtt_service_state() == MQTT_SERV_CONNECTED) ||
+//		(get_mqtt_service_state() == MQTT_SERV_SUBCRIBED)) {
+//		return esp_mqtt_client_publish(mqttc, get_gcpiot_pub_topic_state(),
+//									   "{\"ciao\":\"ciaoval\"}", 0, 1, 0);
+//	} else {
+//		ESP_LOGI(TAG, "state_updt skip publish: MQTT client not connected.");
+//		return -1;
+//	}
+//
+//	return ret;
+//}
 
 void mqtt_cmd_parse(magniflex_reg_t *dev, char *cmd_js) {
 	char buffjs[600];
@@ -627,9 +627,9 @@ esp_err_t my_mqtt_event_handler(esp_mqtt_event_handle_t event) {
 
 	case MQTT_EVENT_CONNECTED:
 		ESP_LOGW(TAG, "MQTT_EVENT_CONNECTED");
-		ESP_LOGI(TAG, "%s", giotc_data_topic_sub);
+//		ESP_LOGI(TAG, "%s", giotc_data_topic_sub);
 
-		msg_id = esp_mqtt_client_subscribe(client, giotc_data_topic_sub, 1);
+//		msg_id = esp_mqtt_client_subscribe(client, giotc_data_topic_sub, 1);
 		set_mqtt_service_state(MQTT_SERV_CONNECTED);
 		break;
 
@@ -653,11 +653,11 @@ esp_err_t my_mqtt_event_handler(esp_mqtt_event_handle_t event) {
 
 	case MQTT_EVENT_DATA:
 		ESP_LOGW(TAG, "MQTT_EVENT_DATA");
-		if (strncmp(event->topic, giotc_data_topic_sub,
-					strlen(giotc_data_topic_sub))) {
-			event->data[event->data_len] = 0;
-			mqtt_cmd_parse(&curdev, event->data);
-		}
+//		if (strncmp(event->topic, giotc_data_topic_sub,
+//					strlen(giotc_data_topic_sub))) {
+//			event->data[event->data_len] = 0;
+//			mqtt_cmd_parse(&curdev, event->data);
+//		}
 		break;
 
 	case MQTT_EVENT_ERROR:
@@ -729,22 +729,19 @@ void invia_stato_completo(float temp, int umid, int connesso, int presenza) {
              presenza ? "true" : "false", 
              uptime_buffer);
 
-    send_fisitron_message(json_buffer);
+    //send_fisitron_message(json_buffer);
 }
 
 
 
 void ctrl_tsk(void *vargs) {
 
-	fisitron_mqtt_app_start();
+	//fisitron_mqtt_app_start();
 
-	sprintf(giotc_cfg_dev_id, GCPIOT_CLIENT_ID_TEMPLATE, macstr);
 	sprintf(giotc_data_topic, DATA_TOPIC_TEMPLATE, macstr);
-	sprintf(giotc_data_topic_sub, DATA_TOPIC_SUB_TEMPLATE, macstr);
 
-	ESP_LOGI(TAG, "giotc_cfg_dev_id %s", giotc_cfg_dev_id);
+
 	ESP_LOGI(TAG, "giotc_data_topic %s", giotc_data_topic);
-	ESP_LOGI(TAG, "giotc_data_topic_sub %s", giotc_data_topic_sub);
 
 	// esp_mqtt_client_config_t mqttcfg = {
 	mqttcfg.uri = GCPIOT_BROKER_URI;
@@ -853,9 +850,9 @@ void ctrl_tsk(void *vargs) {
 					gpio_set_level(GPIO_OUTPUT_IO_0, 0);
 					vTaskDelay(20 / portTICK_PERIOD_MS);
 
-					invia_stato_completo(
-						t, h, get_mqtt_service_state() == MQTT_SERV_CONNECTED,
-						curdev.presence);
+//					invia_stato_completo(
+//						t, h, get_mqtt_service_state() == MQTT_SERV_CONNECTED,
+//						curdev.presence);
 				}
 			}
 		}
@@ -1074,7 +1071,7 @@ void ota_check(void) {
 
 	esp_err_t retur = esp_https_ota(&config_ota);
 	if (retur == ESP_OK) {
-		send_fisitron_message("FIRMWARE UPGRADE COMPLETED");
+		//send_fisitron_message("FIRMWARE UPGRADE COMPLETED");
 
 		gpio_set_level(GPIO_OUTPUT_IO_0, 1000);
 		vTaskDelay(500 / portTICK_PERIOD_MS);
@@ -1091,7 +1088,7 @@ void ota_check(void) {
 
 		esp_restart();
 	} else {
-		send_fisitron_message("FIRMWARE UPGRADE FAILED");
+		//send_fisitron_message("FIRMWARE UPGRADE FAILED");
 		ESP_LOGE(TAG, "Firmware upgrade failed");
 	}
 
@@ -1203,51 +1200,51 @@ void app_main(void) {
 	mountLITTLEFS(partition_label, MOUNT_POINT);
 	memset(private_key_pem, 0, 2000 * sizeof(uint8_t));
 
-	ESP_LOGI(TAG, "Reading file");
-	FILE *f = fopen("/root/Cert/rsa_private.pem", "r");
-	if (f == NULL) {
-		ESP_LOGE(TAG, "Failed to open file for reading");
-		start_with_default_wifi = true;
-	} else {
-		// char line[64];
-		// fgets(line, sizeof(line), f);
-		// ESP_LOGI(TAG, "File -> %s", line);
-		long lSize;
-		char *buffer;
-		size_t result;
-
-		// obtain file size:
-		fseek(f, 0, SEEK_END);
-		lSize = ftell(f);
-		rewind(f);
-
-		// allocate memory to contain the whole file:
-		buffer = (char *)malloc(sizeof(char) * lSize);
-		if (buffer == NULL) {
-			fputs("Memory error", stderr);
-			exit(2);
-		}
-
-		// copy the file into the buffer:
-		result = fread(buffer, 1, lSize, f);
-		if (result != lSize) {
-			fputs("Reading error", stderr);
-			exit(3);
-		}
-
-		/* the whole file is now loaded in the memory buffer. */
-
-		memcpy((private_key_pem), buffer, lSize);
-		privateKeySize = lSize + 1;
-
-		ESP_LOGI(TAG, "File ->##%s## length %ld", private_key_pem, lSize);
-
-		// terminate
-		fclose(f);
-		free(buffer);
-
-		fclose(f);
-	}
+//	ESP_LOGI(TAG, "Reading file");
+//	FILE *f = fopen("/root/Cert/rsa_private.pem", "r");
+//	if (f == NULL) {
+//		ESP_LOGE(TAG, "Failed to open file for reading");
+//		start_with_default_wifi = true;
+//	} else {
+//		// char line[64];
+//		// fgets(line, sizeof(line), f);
+//		// ESP_LOGI(TAG, "File -> %s", line);
+//		long lSize;
+//		char *buffer;
+//		size_t result;
+//
+//		// obtain file size:
+//		fseek(f, 0, SEEK_END);
+//		lSize = ftell(f);
+//		rewind(f);
+//
+//		// allocate memory to contain the whole file:
+//		buffer = (char *)malloc(sizeof(char) * lSize);
+//		if (buffer == NULL) {
+//			fputs("Memory error", stderr);
+//			exit(2);
+//		}
+//
+//		// copy the file into the buffer:
+//		result = fread(buffer, 1, lSize, f);
+//		if (result != lSize) {
+//			fputs("Reading error", stderr);
+//			exit(3);
+//		}
+//
+//		/* the whole file is now loaded in the memory buffer. */
+//
+//		memcpy((private_key_pem), buffer, lSize);
+//		privateKeySize = lSize + 1;
+//
+//		ESP_LOGI(TAG, "File ->##%s## length %ld", private_key_pem, lSize);
+//
+//		// terminate
+//		fclose(f);
+//		free(buffer);
+//
+//		fclose(f);
+//	}
 
 	//***************************************************************************************************************************//
 	//******************************************************* GPIO INIT
@@ -1384,7 +1381,7 @@ void app_main(void) {
 			}
 		}
 
-		ESP_LOGI(TAG, "WIFI NOT CONNECTED OPEN BLE CHANNEL");
+		//ESP_LOGI(TAG, "WIFI NOT CONNECTED OPEN BLE CHANNEL");
 		vTaskDelay(500 / portTICK_PERIOD_MS);
 	}
 

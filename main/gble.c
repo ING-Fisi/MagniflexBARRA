@@ -292,8 +292,8 @@ void prs_bt_js( char *js ) {
 		} break;
 
 		case BT_WIFI: { // parse 'wifi'.
-			//				ESP_LOGD(TAG,"wifi cmd str: %s.", p);
-			//				ESP_LOGI(TAG,"keys value: %s.", strtok_r(savep, "{},:'", &savep));
+							ESP_LOGD(TAG,"wifi cmd str: %s.", p);
+							ESP_LOGI(TAG,"keys value: %s.", strtok_r(savep, "{},:'", &savep));
 			ESP_LOGI(TAG,"BT_WIFI COMMAND CATCH");
 
 
@@ -365,25 +365,18 @@ void prs_bt_js( char *js ) {
 
 		memset(ap_records,0, MAX_APs * sizeof(wifi_ap_record_t));
 		memcpy(ap_records, temp_ap_records_p, MAX_APs * sizeof(wifi_ap_record_t));
-
 		strcat(str,"{'wifi':[");
 
 		for(int i=0;i<MAX_APs;i++)
 		{
 			sprintf(s, "{'ssid':'%s','security':'WPA %s','rssi':'%d'}",(char*) ap_records[i].ssid,auth_names[ap_records[i].authmode],ap_records[i].rssi);
-
 			ESP_LOGI(TAG,"%s\r\n",s);
-
-
 			if(i < MAX_APs-1)
 				strcat(s,",");
-
 			strcat(str,s);
 		}
 
 		strcat(str,"]}\r\n");
-
-
 
 		totbtl = strlen(str);
 		ESP_LOGI(TAG,"%s(%d)",str, totbtl);

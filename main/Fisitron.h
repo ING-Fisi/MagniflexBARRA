@@ -10,8 +10,8 @@
 
 //*********************************************WIFI FISITRON BARRE************************************************* */
 
-#define FISITRON_WIFI_SSID	"FisitronBarre"
-#define FISITRON_WIFI_PSW	"B4rr3M4gn1!"
+#define FISITRON_WIFI_SSID	"FisitronHUB"//FisitronBarre"
+#define FISITRON_WIFI_PSW	"Fisitron319086"//B4rr3M4gn1!"
 //*********************************************MQTT FISICONNECT************************************************* */
 
 #define FISITRON_BROKER_URI	"mqtts://mqtt.fisitron.com:8883"
